@@ -1,5 +1,6 @@
 #include <map.h>
 #include <PerlinNoise.hpp>
+#include <random>
 
 void Map::create(int x, int y)
 {
@@ -39,6 +40,106 @@ void Map::bakeBlockUnsafe(int x, int y)
 {
 	auto &t = this->unsafeGet(x, y);
 
+	if (t.isTree())
+	{
+		bool leftMiddleAir = (x > 0 && unsafeGet(x - 1, y).isAir());
+		bool rightMiddleAir = (x < mapSize.x - 1 && unsafeGet(x + 1, y).isAir());
+		bool topMiddleAir = (y > 0 && unsafeGet(x, y - 1).isAir());
+		bool bottomMiddleAir = (y < mapSize.y - 1 && unsafeGet(x, y + 1).isAir());
+
+		bool leftMiddleTree = (x > 0 && unsafeGet(x - 1, y).isTree());
+		bool rightMiddleTree = (x < mapSize.x - 1 && unsafeGet(x + 1, y).isTree());
+		bool topMiddleTree = (y > 0 && unsafeGet(x, y - 1).isTree());
+		bool bottomMiddleTree = (y < mapSize.y - 1 && unsafeGet(x, y + 1).isTree());
+
+		//if (!bottomMiddleAir)
+		{
+			if (bottomMiddleTree)
+			{
+				if (leftMiddleTree && rightMiddleTree && topMiddleTree)
+				{
+					//both branches uncut
+					t.variationX = 4;
+					t.variationY = 6;
+				}
+				else if (rightMiddleTree && topMiddleTree)
+				{
+					//both branches
+					t.variationX = 0;
+					t.variationY = 6;
+				}
+				else if (leftMiddleTree && topMiddleTree)
+				{
+					//roots uncut
+					t.variationX = 3;
+					t.variationY = 6;
+				}
+				else if (topMiddleTree)
+				{
+					//uncut
+					t.variationX = 0;
+					t.variationY = 0;
+				}
+				else
+				{
+					//todo branches
+					//cut
+					t.variationX = 5;
+					t.variationY = 0;
+				}
+			}
+			else if (!bottomMiddleAir)
+			{
+				if (leftMiddleTree && rightMiddleTree && topMiddleTree)
+				{
+					//both roots uncut
+					t.variationX = 4;
+					t.variationY = 6;
+				}
+				else if (rightMiddleTree && topMiddleTree)
+				{
+					//roots uncut
+					t.variationX = 0;
+					t.variationY = 6;
+				}
+				else if (leftMiddleTree && topMiddleTree)
+				{
+					//roots uncut
+					t.variationX = 3;
+					t.variationY = 6;
+				}
+				else if (topMiddleTree)
+				{
+					//uncut
+					t.variationX = 0;
+					t.variationY = 0;
+				}
+				else
+				{
+					//cut
+					t.variationX = 0;
+					t.variationY = 9;
+				}
+			}
+			else 
+			{
+				if (rightMiddleTree)
+				{
+					//branches
+					t.variationX = 3;
+					t.variationY = 0;
+				}
+				else
+				{
+					t.variationX = 4;
+					t.variationY = 3;
+				}
+
+			}
+
+		}
+
+	}else
 	if (!t.isNone())
 	{
 
@@ -708,6 +809,7 @@ void Map::renderMapIntoTexture()
 	delete[] pixels;
 }
 
+
 #include <FastNoiseSIMD.h>
 
 void generateMap(Map &m, int seed)
@@ -740,6 +842,8 @@ void generateMap(Map &m, int seed)
 	const int silverMinDepth = copperMaxDepth + 20;
 
 
+	const float treeChance = 0.1;
+
 
 	const int montainStart = oceanLine - mountainMaxHeight;
 
@@ -770,7 +874,7 @@ void generateMap(Map &m, int seed)
 	{
 		return int(oceanLine - stoneLine[x] * dirtLayerSizeMax + dirtLayerSizeMin);
 	};
-	
+
 	auto lerp = [](float a, float b, float v)
 	{
 		return a * (v - 1) + b * v;
@@ -782,21 +886,21 @@ void generateMap(Map &m, int seed)
 		for (int i = 0; i < mapW; i++)
 		{
 			auto horizon = getHorizonValue(i);
-			
+
 			if (j > getStoneValue(i))
 			{
 				m.unsafeGet(i, j).type = Tile::stone;
 			}
 			else
-			if (j > horizon)
-			{
-				m.unsafeGet(i, j).type = Tile::dirt;
-			}
-			else
-			{
-				m.unsafeGet(i, j).type = 0;
+				if (j > horizon)
+				{
+					m.unsafeGet(i, j).type = Tile::dirt;
+				}
+				else
+				{
+					m.unsafeGet(i, j).type = 0;
 
-			}
+				}
 
 		}
 	}
@@ -807,19 +911,19 @@ void generateMap(Map &m, int seed)
 #pragma region holes
 
 	//big holes
-	if(1)
+	if (1)
 	{
 		siv::BasicPerlinNoise<float> noise;
 		noise.reseed((uint32_t)seed);
-		
+
 		const float holeNoiseSize = 60.f;
 
 		auto getHole = [&](int x, int y) -> bool
 		{
-			return noise.accumulatedOctaveNoise2D_0_1(x/ holeNoiseSize, y/ holeNoiseSize, 2.f) < 
-				lerp(holeChance, holeChanceMax, std::sqrt((float)y/ mapH));
+			return noise.accumulatedOctaveNoise2D_0_1(x / holeNoiseSize, y / holeNoiseSize, 2.f) <
+				lerp(holeChance, holeChanceMax, std::sqrt((float)y / mapH));
 		};
-		
+
 		for (int j = montainStart; j < mapH; j++)
 		{
 			for (int i = 0; i < mapW; i++)
@@ -833,7 +937,7 @@ void generateMap(Map &m, int seed)
 	}
 
 	//medium holes
-	if(1)
+	if (1)
 	{
 		siv::BasicPerlinNoise<float> noise;
 		noise.reseed((uint32_t)seed);
@@ -889,7 +993,7 @@ void generateMap(Map &m, int seed)
 	if (1)
 	{
 		siv::BasicPerlinNoise<float> noise;
-		noise.reseed((uint32_t)seed+2);
+		noise.reseed((uint32_t)seed + 2);
 
 		const float stonePatchSize = 8.f;
 
@@ -922,7 +1026,7 @@ void generateMap(Map &m, int seed)
 		{
 			if (y > copperMaxDepth)
 			{
-				return noise.accumulatedOctaveNoise2D_0_1(x / stonePatchSize, y / stonePatchSize, 2.f) < copperChance*0.3;
+				return noise.accumulatedOctaveNoise2D_0_1(x / stonePatchSize, y / stonePatchSize, 2.f) < copperChance * 0.3;
 			}
 			else
 			{
@@ -1030,11 +1134,11 @@ void generateMap(Map &m, int seed)
 				m.unsafeGet(i, j - 1).isAir() ||
 				m.unsafeGet(i, j + 1).isAir() ||
 				(i > 0 && m.unsafeGet(i - 1, j).isAir()) ||
-				(i < mapW-1 && m.unsafeGet(i + 1, j).isAir()) ||
-				(i > 0 && m.unsafeGet(i - 1, j-1).isAir()) ||
-				(i < mapW - 1 && m.unsafeGet(i + 1, j-1).isAir())||
-				(i > 0 && m.unsafeGet(i - 1, j+1).isAir()) ||
-				(i < mapW - 1 && m.unsafeGet(i + 1, j+1).isAir())
+				(i < mapW - 1 && m.unsafeGet(i + 1, j).isAir()) ||
+				(i > 0 && m.unsafeGet(i - 1, j - 1).isAir()) ||
+				(i < mapW - 1 && m.unsafeGet(i + 1, j - 1).isAir()) ||
+				(i > 0 && m.unsafeGet(i - 1, j + 1).isAir()) ||
+				(i < mapW - 1 && m.unsafeGet(i + 1, j + 1).isAir())
 				))
 			{
 				m.safeGet(i, j).type = Tile::grass;
@@ -1045,6 +1149,101 @@ void generateMap(Map &m, int seed)
 		}
 	}
 #pragma endregion
+
+#pragma region add trees
+
+	std::mt19937 randomDevice((unsigned int)seed);
+	std::uniform_real perc(0.f, 1.f);
+
+	auto chance = [&](float percent)
+	{
+		return perc(randomDevice) < percent;
+	};
+
+	auto randomVal = [&](int min, int max)
+	{
+		std::uniform_int dist(min, max);
+		return dist(randomDevice);
+	};
+
+	for (int x = 0; x < mapW; x++)
+	{
+
+		if (chance(treeChance))
+		{
+
+			for (int y = 0; y < mapH; y++)
+			{
+				auto t = m.unsafeGet(x, y);
+
+				if (t.isGrass())
+				{
+					//start spawnTree;
+					m.safeGet(x, y - 1).type = Tile::tree;
+
+					int h = randomVal(3, 8);
+					bool placedBranch = true;
+					for (int t = 2; t < h; t++)
+					{
+						auto &b = m.safeGet(x, y - t);
+						if (b.isAir())
+						{
+							b.type = Tile::tree;
+						}
+						else
+						{
+							break; //early break
+						}
+
+						if (placedBranch)
+						{
+							placedBranch = false;
+						}else
+						{
+							if (chance(0.1))
+							{
+								auto &b = m.safeGet(x + 1, y - t);
+								if (b.isAir())
+								{
+									b.type = Tile::tree;
+									placedBranch = true;
+								}
+							}
+
+							if (chance(0.1))
+							{
+								auto &b = m.safeGet(x - 1, y - t);
+								if (b.isAir())
+								{
+									b.type = Tile::tree;
+									placedBranch = true;
+								}
+							}
+						}
+
+
+					}
+
+
+
+				}
+				else if (!t.isAir())
+				{
+					break;
+				}
+
+			}
+
+
+			//skip two
+			x+=2;
+		}
+
+
+	}
+
+#pragma endregion
+
 
 
 	m.bakeEntireMap();

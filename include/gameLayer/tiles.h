@@ -34,6 +34,7 @@ struct Tile
 	bool isDirt();
 	bool isDirtOrGrass();
 	bool isGrass();
+	bool isTree();
 };
 
 

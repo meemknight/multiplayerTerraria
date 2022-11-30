@@ -32,7 +32,7 @@ glm::ivec3 Tile::tilesColor[Tile::TILES_COUNT] =
 
 bool Tile::isAir()
 {
-	return type == none;
+	return type == none || type==tree;
 }
 
 bool Tile::isNone()
@@ -54,4 +54,9 @@ bool Tile::isDirtOrGrass()
 bool Tile::isGrass()
 {
 	return type == grass;
+}
+
+bool Tile::isTree()
+{
+	return type == tree;
 }

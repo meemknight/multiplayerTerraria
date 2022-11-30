@@ -8,7 +8,15 @@ void TileRenderer::loadAll()
 	{
 		std::string f = RESOURCES_PATH "Tiles_" + std::to_string(Tile::fileId[i]) + ".png";
 
-		sprites[i].load(f.c_str(), 16, 16);
+		if (i == Tile::tree)
+		{
+			sprites[i].load(f.c_str(), 20, 20);
+		}
+		else
+		{
+			sprites[i].load(f.c_str(), 16, 16);
+		}
+
 	}
 
 }
@@ -36,8 +44,37 @@ void TileRenderer::renderMap(gl2d::Renderer2D &renderer, Map &map)
 			int tCoordsX = t.variationX;
 			int tCoordsY = t.variationY;
 
-			renderer.renderRectangle({i, j, 1, 1}, {}, {},
-				s.t, s.getTextureCoords(tCoordsX, tCoordsY));
+			if (t.isTree())
+			{
+				if (
+					t.variationX == 3 &&
+					t.variationY == 0
+					)
+				{
+					renderer.renderRectangle({i + 4.f / 16.f, j + 2.f / 16.f, 1, 1}, {}, {},
+						s.t, s.getTextureCoords(tCoordsX, tCoordsY));
+				}
+				else if (
+					t.variationX == 4 &&
+					t.variationY == 3)
+				{
+					renderer.renderRectangle({i - 4.f / 16.f, j + 2.f / 16.f, 1, 1}, {}, {},
+						s.t, s.getTextureCoords(tCoordsX, tCoordsY));
+				}
+				else
+				{
+					renderer.renderRectangle({i, j + 2.f / 16.f, 1, 1}, {}, {},
+						s.t, s.getTextureCoords(tCoordsX, tCoordsY));
+				}
+			
+			}
+			else
+			{
+				renderer.renderRectangle({i, j, 1, 1}, {}, {},
+					s.t, s.getTextureCoords(tCoordsX, tCoordsY));
+			}
+
+			
 		}
 
 }
