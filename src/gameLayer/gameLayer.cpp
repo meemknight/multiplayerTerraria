@@ -9,7 +9,7 @@
 #include <sstream>
 #include "imfilebrowser.h"
 #include <gl2d/gl2d.h>
-
+#include "sprites.h"
 
 struct GameData
 {
@@ -19,11 +19,16 @@ struct GameData
 
 gl2d::Renderer2D renderer;
 
+Sprite dirt;
+
+
 bool initGame()
 {
 	gl2d::init();
 
 	renderer.create();
+
+	dirt.load(RESOURCES_PATH "Tiles_0.png", 16, 16);
 
 	return true;
 }
@@ -39,14 +44,21 @@ bool gameLogic(float deltaTime)
 	
 	glViewport(0, 0, w, h);
 	glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(1, 1, 1, 0);
 
 	renderer.updateWindowMetrics(w, h);
 
 #pragma endregion
 
 
-	renderer.renderRectangle({100, 100, 100, 100}, Colors_Blue);
-		
+	for (int j = 0; j < 5; j++)
+		for (int i = 0; i < 5; i++)
+		{
+			renderer.renderRectangle({100*i, 100*j, 100, 100}, {}, {},
+				dirt.t, dirt.getTextureCoords(i, j));
+		}
+
+
 
 	renderer.flush();
 
