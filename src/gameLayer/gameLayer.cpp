@@ -81,7 +81,7 @@ bool gameLogic(float deltaTime)
 			float xsize = std::max((int)(s.x * 1) - 10, (int)(100 * 1));
 			float aspect = (float)map.mapSize.x/map.mapSize.y;
 
-			ImGui::Image((void *)map.texture, {200,200 / aspect},
+			ImGui::Image((void *)map.texture, {2400,2400 / aspect},
 				{0, 0}, {1, 1});
 
 			ImGui::EndChild();

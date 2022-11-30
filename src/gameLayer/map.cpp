@@ -1,4 +1,5 @@
 #include <map.h>
+#include <PerlinNoise.hpp>
 
 void Map::create(int x, int y)
 {
@@ -68,7 +69,7 @@ void Map::bakeBlockUnsafe(int x, int y)
 		bool topMiddleDirt = 0;
 		bool bottomMiddleDirt = 0;
 
-		//if (!t.isGrass())
+		if (!t.isGrass())
 		{
 			leftTopDirt = (x > 0 && y > 0 && unsafeGet(x - 1, y - 1).isDirt());
 			leftMiddleDirt = (x > 0 && unsafeGet(x - 1, y).isDirt());
@@ -590,14 +591,37 @@ void generateMap(Map &m, int seed)
 	const int mapW = 600;
 	const int mapH = 750;
 
-	const int oceanLine = 330;
-	const int dirtLayerSize = 15;
+	const int oceanLine = 230;
+	const int dirtLayerSizeMin = 75;
+	const int dirtLayerSizeMax = 120 - dirtLayerSizeMin;
+
 	const float mountainMaxHeight = 60;
 	const float valeyMaxDepth = 30;
-	const int grassEnd = oceanLine + 50;
+	const int grassEnd = oceanLine + valeyMaxDepth + 30;
+
+	const float holeChance = 0.3f;
+	const float holeChanceMax = 0.35f;
+	const float mediumHoleChance = 0.2;
+	const float smallHoleChance = 0.2;
+	const float stonePatchChance = 0.2;
+	const float copperChance = 0.2;
+	const float ironChance = 0.1;
+	const float goldChance = 0.12;
+	const float silverChance = 0.1;
+
+
+	const int copperMaxDepth = oceanLine + 120;
+
+	const int goldMinDepth = copperMaxDepth + 50;
+	const int silverMinDepth = copperMaxDepth + 20;
+
+
+
+	const int montainStart = oceanLine - mountainMaxHeight;
 
 	m.create(mapW, mapH);
 	float *horizonLine = 0;
+	float *stoneLine = 0;
 
 	{
 		FastNoiseSIMD *horizonNoiseSet = FastNoiseSIMD::NewFastNoiseSIMD(seed);
@@ -608,6 +632,7 @@ void generateMap(Map &m, int seed)
 		horizonNoiseSet->SetFractalOctaves(5);
 
 		horizonLine = horizonNoiseSet->GetPerlinFractalSet(0, 0, 0, mapW, 1, 1);
+		stoneLine = horizonNoiseSet->GetPerlinFractalSet(0, 0, 45, mapW, 1, 1);
 		delete horizonNoiseSet;
 	}
 
@@ -617,12 +642,28 @@ void generateMap(Map &m, int seed)
 		return int(oceanLine - (horizonLine[x] * (mountainMaxHeight + valeyMaxDepth) - valeyMaxDepth));
 	};
 
+	auto getStoneValue = [&](int x) -> int
+	{
+		return int(oceanLine - stoneLine[x] * dirtLayerSizeMax + dirtLayerSizeMin);
+	};
+	
+	auto lerp = [](float a, float b, float v)
+	{
+		return a * (v - 1) + b * v;
+	};
+
 #pragma region horizon line
 	for (int j = 0; j < mapH; j++)
 	{
 		for (int i = 0; i < mapW; i++)
 		{
 			auto horizon = getHorizonValue(i);
+			
+			if (j > getStoneValue(i))
+			{
+				m.unsafeGet(i, j).type = Tile::stone;
+			}
+			else
 			if (j > horizon)
 			{
 				m.unsafeGet(i, j).type = Tile::dirt;
@@ -635,10 +676,227 @@ void generateMap(Map &m, int seed)
 
 		}
 	}
+	FastNoiseSIMD::FreeNoiseSet(horizonLine);
+
+#pragma endregion
+
+#pragma region holes
+
+	//big holes
+	if(1)
+	{
+		siv::BasicPerlinNoise<float> noise;
+		noise.reseed((uint32_t)seed);
+		
+		const float holeNoiseSize = 60.f;
+
+		auto getHole = [&](int x, int y) -> bool
+		{
+			return noise.accumulatedOctaveNoise2D_0_1(x/ holeNoiseSize, y/ holeNoiseSize, 2.f) < 
+				lerp(holeChance, holeChanceMax, std::sqrt((float)y/ mapH));
+		};
+		
+		for (int j = montainStart; j < mapH; j++)
+		{
+			for (int i = 0; i < mapW; i++)
+			{
+				if (getHole(i, j))
+				{
+					m.safeGet(i, j).type = Tile::none;
+				}
+			}
+		}
+	}
+
+	//medium holes
+	if(1)
+	{
+		siv::BasicPerlinNoise<float> noise;
+		noise.reseed((uint32_t)seed);
+
+		const float holeNoiseSize = 20.f;
+
+		auto getHole = [&](int x, int y) -> bool
+		{
+			return noise.accumulatedOctaveNoise2D_0_1(x / holeNoiseSize, y / holeNoiseSize, 2.f) < mediumHoleChance;
+		};
+
+		for (int j = montainStart; j < mapH; j++)
+		{
+			for (int i = 0; i < mapW; i++)
+			{
+				if (getHole(i, j))
+				{
+					m.safeGet(i, j).type = Tile::none;
+				}
+			}
+		}
+	}
+
+	//small holes
+	if (1)
+	{
+		siv::BasicPerlinNoise<float> noise;
+		noise.reseed((uint32_t)seed);
+
+		const float holeNoiseSize = 8.f;
+
+		auto getHole = [&](int x, int y) -> bool
+		{
+			return noise.accumulatedOctaveNoise2D_0_1(x / holeNoiseSize, y / holeNoiseSize, 2.f) < smallHoleChance;
+		};
+
+		for (int j = montainStart; j < mapH; j++)
+		{
+			for (int i = 0; i < mapW; i++)
+			{
+				if (getHole(i, j))
+				{
+					m.safeGet(i, j).type = Tile::none;
+				}
+			}
+		}
+	}
+#pragma endregion
+
+#pragma region patches
+
+	//small stone patches
+	if (1)
+	{
+		siv::BasicPerlinNoise<float> noise;
+		noise.reseed((uint32_t)seed+2);
+
+		const float stonePatchSize = 8.f;
+
+		auto getStonePatch = [&](int x, int y) -> bool
+		{
+			return noise.accumulatedOctaveNoise2D_0_1(x / stonePatchSize, y / stonePatchSize, 2.f) < stonePatchChance;
+		};
+
+		for (int j = montainStart; j < mapH; j++)
+		{
+			for (int i = 0; i < mapW; i++)
+			{
+				if (!m.safeGet(i, j).isNone() && getStonePatch(i, j))
+				{
+					m.safeGet(i, j).type = Tile::stone;
+				}
+			}
+		}
+	}
+
+	//small copper patches
+	if (1)
+	{
+		siv::BasicPerlinNoise<float> noise;
+		noise.reseed((uint32_t)seed + 100);
+
+		const float stonePatchSize = 10.f;
+
+		auto getCopperPatch = [&](int x, int y) -> bool
+		{
+			if (y > copperMaxDepth)
+			{
+				return noise.accumulatedOctaveNoise2D_0_1(x / stonePatchSize, y / stonePatchSize, 2.f) < copperChance*0.3;
+			}
+			else
+			{
+				return noise.accumulatedOctaveNoise2D_0_1(x / stonePatchSize, y / stonePatchSize, 2.f) < copperChance;
+			}
+		};
+
+		for (int j = montainStart; j < mapH; j++)
+		{
+			for (int i = 0; i < mapW; i++)
+			{
+				if (!m.safeGet(i, j).isNone() && getCopperPatch(i, j))
+				{
+					m.safeGet(i, j).type = Tile::copper;
+				}
+			}
+		}
+	}
+
+	//small iron patches
+	if (1)
+	{
+		siv::BasicPerlinNoise<float> noise;
+		noise.reseed((uint32_t)seed + 140);
+
+		const float stonePatchSize = 10.f;
+
+		auto getIronPatch = [&](int x, int y) -> bool
+		{
+			return noise.accumulatedOctaveNoise2D_0_1(x / stonePatchSize, y / stonePatchSize, 2.f) < ironChance;
+		};
+
+		for (int j = montainStart; j < mapH; j++)
+		{
+			for (int i = 0; i < mapW; i++)
+			{
+				if (!m.safeGet(i, j).isNone() && getIronPatch(i, j))
+				{
+					m.safeGet(i, j).type = Tile::iron;
+				}
+			}
+		}
+	}
+
+	//small gold patches
+	if (1)
+	{
+		siv::BasicPerlinNoise<float> noise;
+		noise.reseed((uint32_t)seed + 140);
+
+		const float stonePatchSize = 17.f;
+
+		auto getGoldPatch = [&](int x, int y) -> bool
+		{
+			return noise.accumulatedOctaveNoise2D_0_1(x / stonePatchSize, y / stonePatchSize, 2.f) < goldChance;
+		};
+
+		for (int j = goldMinDepth; j < mapH; j++)
+		{
+			for (int i = 0; i < mapW; i++)
+			{
+				if (!m.safeGet(i, j).isNone() && getGoldPatch(i, j))
+				{
+					m.safeGet(i, j).type = Tile::gold;
+				}
+			}
+		}
+	}
+
+	//small silver patches
+	if (1)
+	{
+		siv::BasicPerlinNoise<float> noise;
+		noise.reseed((uint32_t)seed + 140);
+
+		const float stonePatchSize = 3.f;
+
+		auto getSilverPatch = [&](int x, int y) -> bool
+		{
+			return noise.accumulatedOctaveNoise2D_0_1(x / stonePatchSize, y / stonePatchSize, 3.f) < silverChance;
+		};
+
+		for (int j = silverMinDepth; j < mapH; j++)
+		{
+			for (int i = 0; i < mapW; i++)
+			{
+				if (!m.safeGet(i, j).isNone() && getSilverPatch(i, j))
+				{
+					m.safeGet(i, j).type = Tile::silver;
+				}
+			}
+		}
+	}
+
 #pragma endregion
 
 #pragma region add grass
-	for (int j = 1; j < mapH-1; j++)
+	for (int j = 1; j < grassEnd; j++)
 	{
 		for (int i = 0; i < mapW; i++)
 		{
