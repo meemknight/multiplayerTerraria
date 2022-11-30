@@ -13,6 +13,7 @@ void Map::create(int x, int y)
 
 void Map::cleanup()
 {
+	glDeleteTextures(1, &texture);
 	*this = Map{};
 }
 
@@ -67,7 +68,7 @@ void Map::bakeBlockUnsafe(int x, int y)
 		bool topMiddleDirt = 0;
 		bool bottomMiddleDirt = 0;
 
-		if (!t.isGrass())
+		//if (!t.isGrass())
 		{
 			leftTopDirt = (x > 0 && y > 0 && unsafeGet(x - 1, y - 1).isDirt());
 			leftMiddleDirt = (x > 0 && unsafeGet(x - 1, y).isDirt());
@@ -91,6 +92,28 @@ void Map::bakeBlockUnsafe(int x, int y)
 			rightBottomDirt =	!rightBottomDirt;
 			topMiddleDirt =		!topMiddleDirt;
 			bottomMiddleDirt =	!bottomMiddleDirt;
+
+			if (x == 0)
+			{
+				leftTopDirt = false;
+				leftBottomDirt = false;
+				leftMiddleDirt = false;
+			}
+
+			if (x == mapSize.x-1)
+			{
+				rightTopDirt = false;
+				rightBottomDirt = false;
+				rightMiddleDirt = false;
+			}
+
+			if (y == mapSize.y - 1)
+			{
+				rightBottomDirt = false;
+				bottomMiddleDirt = false;
+				leftBottomDirt = false;
+			}
+
 		}
 
 
@@ -533,6 +556,33 @@ void Map::bakeEntireMap()
 		}
 }
 
+void Map::renderMapIntoTexture()
+{
+	glDeleteTextures(1, &texture);
+
+	unsigned char *pixels = new unsigned char[mapSize.x * mapSize.y * 4];
+
+	for (int j = 0; j < mapSize.y; j++)
+	{
+		for (int i = 0; i < mapSize.x; i++)
+		{
+			glm::ivec3 b = Tile::tilesColor[unsafeGet(i, j).type];
+			pixels[(i + j * mapSize.x) * 4 + 0] = b[0];
+			pixels[(i + j * mapSize.x) * 4 + 1] = b[1];
+			pixels[(i + j * mapSize.x) * 4 + 2] = b[2];
+			pixels[(i + j * mapSize.x) * 4 + 3] = 255;
+
+		}
+	}
+
+	gl2d::Texture t;
+	t.createFromBuffer((char*)pixels, mapSize.x, mapSize.y, true);
+
+	texture = t.id;
+
+	delete[] pixels;
+}
+
 #include <FastNoiseSIMD.h>
 
 void generateMap(Map &m, int seed)
@@ -598,7 +648,11 @@ void generateMap(Map &m, int seed)
 				m.unsafeGet(i, j - 1).isAir() ||
 				m.unsafeGet(i, j + 1).isAir() ||
 				(i > 0 && m.unsafeGet(i - 1, j).isAir()) ||
-				(i < mapW-1 && m.unsafeGet(i + 1, j).isAir())
+				(i < mapW-1 && m.unsafeGet(i + 1, j).isAir()) ||
+				(i > 0 && m.unsafeGet(i - 1, j-1).isAir()) ||
+				(i < mapW - 1 && m.unsafeGet(i + 1, j-1).isAir())||
+				(i > 0 && m.unsafeGet(i - 1, j+1).isAir()) ||
+				(i < mapW - 1 && m.unsafeGet(i + 1, j+1).isAir())
 				))
 			{
 				m.safeGet(i, j).type = Tile::grass;

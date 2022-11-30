@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include <glm/vec3.hpp>
 
 struct Tile
 {
@@ -27,6 +27,7 @@ struct Tile
 	unsigned char variationY = 0;
 
 	static int fileId[TILES_COUNT];
+	static glm::ivec3 tilesColor[TILES_COUNT];
 
 	bool isAir();
 	bool isNone();

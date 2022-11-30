@@ -13,6 +13,9 @@
 #include <tileRenderer.h>
 #include "map.h"
 
+#undef min
+#undef max
+
 struct GameData
 {
 
@@ -36,6 +39,8 @@ bool initGame()
 	tileRenderer.loadAll();
 
 	generateMap(map, 1234);
+
+	map.renderMapIntoTexture();
 
 	return true;
 }
@@ -66,7 +71,22 @@ bool gameLogic(float deltaTime)
 
 	ImGui::DragFloat("zoom", &renderer.currentCamera.zoom, 1, 1, 500);
 	ImGui::DragFloat2("player pos", &playerPos[0], 5);
+	
+	{
+		auto s = ImGui::GetContentRegionMax();
 
+		if (ImGui::BeginChild(6996, {}, false, ImGuiWindowFlags_HorizontalScrollbar))
+		{
+
+			float xsize = std::max((int)(s.x * 1) - 10, (int)(100 * 1));
+			float aspect = (float)map.mapSize.x/map.mapSize.y;
+
+			ImGui::Image((void *)map.texture, {200,200 / aspect},
+				{0, 0}, {1, 1});
+
+			ImGui::EndChild();
+		}
+	}
 
 
 	ImGui::End();

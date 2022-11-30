@@ -3,6 +3,8 @@
 #include <vector>
 #include "tiles.h"
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <gl2d/gl2d.h>
 
 struct Map
 {
@@ -21,6 +23,10 @@ struct Map
 	void bakeBlockSafe(int x, int y);
 
 	void bakeEntireMap();
+
+	void renderMapIntoTexture();
+
+	GLuint texture = 0;
 };
 
 
