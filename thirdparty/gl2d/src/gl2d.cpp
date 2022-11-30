@@ -1479,6 +1479,9 @@ namespace gl2d
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);//todo look into
+
+
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -1750,26 +1753,29 @@ namespace gl2d
 		return m; //todo not tested, add rotation
 	}
 
-	void Camera::follow(glm::vec2 pos, float speed, float max, float w, float h)
+	void Camera::follow(glm::vec2 pos, float speed, float min, float max, float w, float h)
 	{
 		pos.x -= w / 2.f;
 		pos.y -= h / 2.f;
 
 		glm::vec2 delta = pos - position;
+		bool signX = delta.x >= 0;
+		bool signY = delta.y >= 0;
+
 		float len = glm::length(delta);
 
 		delta = glm::normalize(delta);
 
-		if (len < 4.f)
+		if (len < min*2)
 		{
 			speed /= 4.f;
 		}
-		else if (len < 8.f)
+		else if (len < min*4)
 		{
 			speed /= 2.f;
 		}
 
-		if (len > 2.f)
+		if (len > min)
 			if (len > max)
 			{
 				len = max;
@@ -1779,6 +1785,15 @@ namespace gl2d
 			else
 			{
 				position += delta * speed;
+
+				glm::vec2 delta2 = pos - position;
+				bool signX2 = delta.x >= 0;
+				bool signY2 = delta.y >= 0;
+
+				if (signX2 != signX || signY2 != signY || glm::length(delta2) > len)
+				{
+					position = pos;
+				}
 			}
 
 	}

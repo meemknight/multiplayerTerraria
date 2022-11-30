@@ -24,12 +24,14 @@ gl2d::Renderer2D renderer;
 TileRenderer tileRenderer;
 Map map;
 
+glm::vec2 playerPos = {};
 
 bool initGame()
 {
 	gl2d::init();
 
 	renderer.create();
+	renderer.currentCamera.zoom = 100;
 
 	tileRenderer.loadAll();
 
@@ -55,9 +57,19 @@ bool gameLogic(float deltaTime)
 
 #pragma endregion
 
+	
+	renderer.currentCamera.follow(playerPos, 1, 0.01, 3, w, h);
 
 	tileRenderer.renderMap(renderer, map);
 
+	ImGui::Begin("camera");
+
+	ImGui::DragFloat("zoom", &renderer.currentCamera.zoom, 1, 0.00001, 500);
+	ImGui::DragFloat2("player pos", &playerPos[0], 0.002);
+
+
+
+	ImGui::End();
 
 
 

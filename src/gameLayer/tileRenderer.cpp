@@ -15,9 +15,19 @@ void TileRenderer::loadAll()
 
 void TileRenderer::renderMap(gl2d::Renderer2D &renderer, Map &map)
 {
+	auto viewRect = renderer.getViewRect();
 
-	for (int j = 0; j < map.mapSize.y; j++)
-		for (int i = 0; i < map.mapSize.x; i++)
+	glm::ivec2 minV = {viewRect.x, viewRect.y};
+	glm::ivec2 maxV = maxV + glm::ivec2{viewRect.z+1, viewRect.w+1};
+
+	minV = glm::max(minV, {0,0});
+	maxV = glm::min(maxV, {map.mapSize.x,map.mapSize.y});
+
+	minV = {0,0};
+	maxV = {map.mapSize.x,map.mapSize.y};
+
+	for (int j = minV.y; j < maxV.y; j++)
+		for (int i = minV.x; i < maxV.x; i++)
 		{
 			auto &t = map.safeGet(i, j);
 
@@ -28,7 +38,7 @@ void TileRenderer::renderMap(gl2d::Renderer2D &renderer, Map &map)
 			int tCoordsX = t.variationX;
 			int tCoordsY = t.variationY;
 
-			renderer.renderRectangle({100 * i, 100 * j, 100, 100}, {}, {},
+			renderer.renderRectangle({i, j, 1, 1}, {}, {},
 				s.t, s.getTextureCoords(tCoordsX, tCoordsY));
 		}
 

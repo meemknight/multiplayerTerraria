@@ -555,5 +555,4 @@ void Map::bakeEntireMap()
 		{
 			bakeBlockUnsafe(i, j);
 		}
-
 }
