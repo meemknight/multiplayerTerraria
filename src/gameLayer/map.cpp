@@ -5,41 +5,10 @@ void Map::create(int x, int y)
 
 	cleanup();
 
-	mapSize = {15,10};
+	mapSize = {x, y};
 
 	tiles.resize(mapSize.x * mapSize.y);
 
-	safeGet(3, 3) = Tile::stone;
-	safeGet(4, 3) = Tile::stone;
-	safeGet(4, 4) = Tile::stone;
-	safeGet(4, 2) = Tile::stone;
-	safeGet(4, 10) = Tile::stone;
-	safeGet(5, 3) = Tile::stone;
-	safeGet(6, 7) = Tile::stone;
-	
-	safeGet(3, 4) = Tile::dirt;
-	safeGet(4, 4) = Tile::dirt;
-	safeGet(4, 5) = Tile::dirt;
-	safeGet(4, 3) = Tile::dirt;
-	safeGet(4, 11) = Tile::dirt;
-	safeGet(5, 4) = Tile::dirt;
-	safeGet(6, 8) = Tile::dirt;
-
-	safeGet(8, 3) = Tile::stone;
-	safeGet(9, 3) = Tile::stone;
-	safeGet(10, 3) = Tile::stone;
-
-	safeGet(13, 3) = Tile::stone;
-	safeGet(13, 4) = Tile::stone;
-	safeGet(13, 5) = Tile::stone;
-
-	safeGet(2, 7) = Tile::stone;
-	safeGet(2, 8) = Tile::stone;
-	safeGet(3, 7) = Tile::stone;
-	safeGet(3, 8) = Tile::stone;
-
-
-	bakeEntireMap();
 }
 
 void Map::cleanup()
@@ -82,6 +51,13 @@ void Map::bakeBlockUnsafe(int x, int y)
 		bool topMiddleAir = (y > 0 && unsafeGet(x, y - 1).isAir());
 		bool bottomMiddleAir = (y < mapSize.y-1 && unsafeGet(x, y + 1).isAir());
 
+		if (y == mapSize.y - 1)
+		{
+			leftTopAir = true;
+			rightTopAir = true;
+			topMiddleAir = true;
+		}
+
 		bool leftTopDirt = 0;
 		bool leftMiddleDirt = 0;
 		bool leftBottomDirt = 0;
@@ -91,7 +67,7 @@ void Map::bakeBlockUnsafe(int x, int y)
 		bool topMiddleDirt = 0;
 		bool bottomMiddleDirt = 0;
 
-		//if (!t.isDirt())
+		if (!t.isGrass())
 		{
 			leftTopDirt = (x > 0 && y > 0 && unsafeGet(x - 1, y - 1).isDirt());
 			leftMiddleDirt = (x > 0 && unsafeGet(x - 1, y).isDirt());
@@ -105,7 +81,7 @@ void Map::bakeBlockUnsafe(int x, int y)
 			bottomMiddleDirt = (y < mapSize.y - 1 && unsafeGet(x, y + 1).isDirt());
 		}
 
-		if (t.isDirt()) 
+		if (t.type == Tile::dirt) 
 		{
 			leftTopDirt =		!leftTopDirt;
 			leftMiddleDirt =	!leftMiddleDirt;
@@ -555,4 +531,87 @@ void Map::bakeEntireMap()
 		{
 			bakeBlockUnsafe(i, j);
 		}
+}
+
+#include <FastNoiseSIMD.h>
+
+void generateMap(Map &m, int seed)
+{
+	const int mapW = 600;
+	const int mapH = 750;
+
+	const int oceanLine = 330;
+	const int dirtLayerSize = 15;
+	const float mountainMaxHeight = 60;
+	const float valeyMaxDepth = 30;
+	const int grassEnd = oceanLine + 50;
+
+	m.create(mapW, mapH);
+	float *horizonLine = 0;
+
+	{
+		FastNoiseSIMD *horizonNoiseSet = FastNoiseSIMD::NewFastNoiseSIMD(seed);
+
+		float scale = 1.5;
+		horizonNoiseSet->SetAxisScales(scale, scale, scale);
+		horizonNoiseSet->SetFrequency(0.030);
+		horizonNoiseSet->SetFractalOctaves(5);
+
+		horizonLine = horizonNoiseSet->GetPerlinFractalSet(0, 0, 0, mapW, 1, 1);
+		delete horizonNoiseSet;
+	}
+
+
+	auto getHorizonValue = [&](int x) -> int
+	{
+		return int(oceanLine - (horizonLine[x] * (mountainMaxHeight + valeyMaxDepth) - valeyMaxDepth));
+	};
+
+#pragma region horizon line
+	for (int j = 0; j < mapH; j++)
+	{
+		for (int i = 0; i < mapW; i++)
+		{
+			auto horizon = getHorizonValue(i);
+			if (j > horizon)
+			{
+				m.unsafeGet(i, j).type = Tile::dirt;
+			}
+			else
+			{
+				m.unsafeGet(i, j).type = 0;
+
+			}
+
+		}
+	}
+#pragma endregion
+
+#pragma region add grass
+	for (int j = 1; j < mapH-1; j++)
+	{
+		for (int i = 0; i < mapW; i++)
+		{
+			if (
+				m.safeGet(i, j).type == Tile::dirt &&
+				(
+				m.unsafeGet(i, j - 1).isAir() ||
+				m.unsafeGet(i, j + 1).isAir() ||
+				(i > 0 && m.unsafeGet(i - 1, j).isAir()) ||
+				(i < mapW-1 && m.unsafeGet(i + 1, j).isAir())
+				))
+			{
+				m.safeGet(i, j).type = Tile::grass;
+			}
+
+
+
+		}
+	}
+#pragma endregion
+
+
+	m.bakeEntireMap();
+
+
 }

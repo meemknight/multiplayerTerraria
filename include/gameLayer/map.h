@@ -22,3 +22,6 @@ struct Map
 
 	void bakeEntireMap();
 };
+
+
+void generateMap(Map &m, int seed);

@@ -35,7 +35,7 @@ bool initGame()
 
 	tileRenderer.loadAll();
 
-	map.create(100, 100);
+	generateMap(map, 1234);
 
 	return true;
 }
@@ -64,8 +64,8 @@ bool gameLogic(float deltaTime)
 
 	ImGui::Begin("camera");
 
-	ImGui::DragFloat("zoom", &renderer.currentCamera.zoom, 1, 0.00001, 500);
-	ImGui::DragFloat2("player pos", &playerPos[0], 0.002);
+	ImGui::DragFloat("zoom", &renderer.currentCamera.zoom, 1, 1, 500);
+	ImGui::DragFloat2("player pos", &playerPos[0], 5);
 
 
 
