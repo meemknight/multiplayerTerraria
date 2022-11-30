@@ -1,7 +1,7 @@
 #include <tiles.h>
 
 
-int Tiles::fileId[Tiles::TILES_COUNT] =
+int Tile::fileId[Tile::TILES_COUNT] =
 {
 	-1,
 	0,
@@ -14,3 +14,18 @@ int Tiles::fileId[Tiles::TILES_COUNT] =
 	9,
 	30 //wodden plank
 };
+
+bool Tile::isAir()
+{
+	return type == none;
+}
+
+bool Tile::isNone()
+{
+	return type == none;
+}
+
+bool Tile::isDirt()
+{
+	return type == dirt;
+}

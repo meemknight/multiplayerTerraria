@@ -2,13 +2,17 @@
 
 #include "sprites.h"
 #include "tiles.h"
+#include "map.h"
+#include <gl2d/gl2d.h>
 
 struct TileRenderer
 {
 
-	Sprite sprites[Tiles::TILES_COUNT];
+	Sprite sprites[Tile::TILES_COUNT];
 
 	void loadAll();
 
+
+	void renderMap(gl2d::Renderer2D &renderer, Map &map);
 
 };

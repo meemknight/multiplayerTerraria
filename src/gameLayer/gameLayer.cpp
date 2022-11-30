@@ -11,6 +11,7 @@
 #include <gl2d/gl2d.h>
 #include "sprites.h"
 #include <tileRenderer.h>
+#include "map.h"
 
 struct GameData
 {
@@ -21,6 +22,7 @@ struct GameData
 gl2d::Renderer2D renderer;
 
 TileRenderer tileRenderer;
+Map map;
 
 
 bool initGame()
@@ -30,6 +32,8 @@ bool initGame()
 	renderer.create();
 
 	tileRenderer.loadAll();
+
+	map.create(100, 100);
 
 	return true;
 }
@@ -52,14 +56,8 @@ bool gameLogic(float deltaTime)
 #pragma endregion
 
 
-	for (int j = 0; j < 5; j++)
-		for (int i = 0; i < 5; i++)
-		{
-			auto &s = tileRenderer.sprites[Tiles::grass];
+	tileRenderer.renderMap(renderer, map);
 
-			renderer.renderRectangle({100*i, 100*j, 100, 100}, {}, {},
-				s.t, s.getTextureCoords(i, j));
-		}
 
 
 
