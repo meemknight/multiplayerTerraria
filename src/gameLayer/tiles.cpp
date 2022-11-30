@@ -42,8 +42,14 @@ bool Tile::isNone()
 
 bool Tile::isDirt()
 {
+	return type == dirt;
+}
+
+bool Tile::isDirtOrGrass()
+{
 	return type == dirt || type == grass;
 }
+
 
 bool Tile::isGrass()
 {

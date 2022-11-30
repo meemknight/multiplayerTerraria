@@ -32,6 +32,7 @@ struct Tile
 	bool isAir();
 	bool isNone();
 	bool isDirt();
+	bool isDirtOrGrass();
 	bool isGrass();
 };
 

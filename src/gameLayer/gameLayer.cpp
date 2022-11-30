@@ -18,6 +18,8 @@
 
 struct GameData
 {
+	float zoom = 1;
+	glm::vec2 playerPos = {};
 
 
 }gameData;
@@ -27,7 +29,6 @@ gl2d::Renderer2D renderer;
 TileRenderer tileRenderer;
 Map map;
 
-glm::vec2 playerPos = {};
 
 bool initGame()
 {
@@ -41,6 +42,11 @@ bool initGame()
 	generateMap(map, 1234);
 
 	map.renderMapIntoTexture();
+
+	platform::readEntireFile(RESOURCES_PATH "gameData.data", &gameData, sizeof(GameData));
+
+	renderer.currentCamera.zoom = gameData.zoom;
+
 
 	return true;
 }
@@ -63,15 +69,17 @@ bool gameLogic(float deltaTime)
 #pragma endregion
 
 	
-	renderer.currentCamera.follow(playerPos, 1, 0.01, 3, w, h);
+	renderer.currentCamera.follow(gameData.playerPos, 1, 0.01, 3, w, h);
 
 	tileRenderer.renderMap(renderer, map);
 
 	ImGui::Begin("camera");
 
 	ImGui::DragFloat("zoom", &renderer.currentCamera.zoom, 1, 1, 500);
-	ImGui::DragFloat2("player pos", &playerPos[0], 5);
+	ImGui::DragFloat2("player pos", &gameData.playerPos[0], 5);
 	
+	gameData.zoom = renderer.currentCamera.zoom;
+
 	{
 		auto s = ImGui::GetContentRegionMax();
 

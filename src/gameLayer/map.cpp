@@ -55,6 +55,13 @@ void Map::bakeBlockUnsafe(int x, int y)
 
 		if (y == mapSize.y - 1)
 		{
+			leftBottomAir = false;
+			rightBottomAir = false;
+			bottomMiddleAir = false;
+		}
+
+		if (y == 0)
+		{
 			leftTopAir = true;
 			rightTopAir = true;
 			topMiddleAir = true;
@@ -71,16 +78,29 @@ void Map::bakeBlockUnsafe(int x, int y)
 
 		if (!t.isGrass())
 		{
-			leftTopDirt = (x > 0 && y > 0 && unsafeGet(x - 1, y - 1).isDirt());
-			leftMiddleDirt = (x > 0 && unsafeGet(x - 1, y).isDirt());
-			leftBottomDirt = (x > 0 && y < mapSize.y - 1 && unsafeGet(x - 1, y + 1).isDirt());
+			leftTopDirt = (x > 0 && y > 0 && unsafeGet(x - 1, y - 1).isDirtOrGrass());
+			leftMiddleDirt = (x > 0 && unsafeGet(x - 1, y).isDirtOrGrass());
+			leftBottomDirt = (x > 0 && y < mapSize.y - 1 && unsafeGet(x - 1, y + 1).isDirtOrGrass());
 
-			rightTopDirt = (x < mapSize.x - 1 && y > 0 && unsafeGet(x + 1, y - 1).isDirt());
-			rightMiddleDirt = (x < mapSize.x - 1 && unsafeGet(x + 1, y).isDirt());
-			rightBottomDirt = (x < mapSize.x - 1 && y < mapSize.y - 1 && unsafeGet(x + 1, y + 1).isDirt());
+			rightTopDirt = (x < mapSize.x - 1 && y > 0 && unsafeGet(x + 1, y - 1).isDirtOrGrass());
+			rightMiddleDirt = (x < mapSize.x - 1 && unsafeGet(x + 1, y).isDirtOrGrass());
+			rightBottomDirt = (x < mapSize.x - 1 && y < mapSize.y - 1 && unsafeGet(x + 1, y + 1).isDirtOrGrass());
 
-			topMiddleDirt = (y > 0 && unsafeGet(x, y - 1).isDirt());
-			bottomMiddleDirt = (y < mapSize.y - 1 && unsafeGet(x, y + 1).isDirt());
+			topMiddleDirt = (y > 0 && unsafeGet(x, y - 1).isDirtOrGrass());
+			bottomMiddleDirt = (y < mapSize.y - 1 && unsafeGet(x, y + 1).isDirtOrGrass());
+		}
+		else
+		{
+			//leftTopDirt = (x > 0 && y > 0 && unsafeGet(x - 1, y - 1).isGrass());
+			//leftMiddleDirt = (x > 0 && unsafeGet(x - 1, y).isGrass());
+			//leftBottomDirt = (x > 0 && y < mapSize.y - 1 && unsafeGet(x - 1, y + 1).isGrass());
+
+			//rightTopDirt = (x < mapSize.x - 1 && y > 0 && unsafeGet(x + 1, y - 1).isGrass());
+			//rightMiddleDirt = (x < mapSize.x - 1 && unsafeGet(x + 1, y).isGrass());
+			//rightBottomDirt = (x < mapSize.x - 1 && y < mapSize.y - 1 && unsafeGet(x + 1, y + 1).isGrass());
+
+			//topMiddleDirt = (y > 0 && unsafeGet(x, y - 1).isGrass());
+			//bottomMiddleDirt = (y < mapSize.y - 1 && unsafeGet(x, y + 1).isGrass());
 		}
 
 		if (t.type == Tile::dirt) 
@@ -93,6 +113,15 @@ void Map::bakeBlockUnsafe(int x, int y)
 			rightBottomDirt =	!rightBottomDirt;
 			topMiddleDirt =		!topMiddleDirt;
 			bottomMiddleDirt =	!bottomMiddleDirt;
+
+			leftTopDirt =		0;
+			leftMiddleDirt =	0;
+			leftBottomDirt =	0;
+			rightTopDirt =		0;
+			rightMiddleDirt =	0;
+			rightBottomDirt =	0;
+			topMiddleDirt =		0;
+			bottomMiddleDirt =	0;
 
 			if (x == 0)
 			{
@@ -115,6 +144,12 @@ void Map::bakeBlockUnsafe(int x, int y)
 				leftBottomDirt = false;
 			}
 
+			if (y == 0)
+			{
+				leftTopDirt = false;
+				rightTopDirt = false;
+				topMiddleDirt = false;
+			}
 		}
 
 
@@ -351,7 +386,7 @@ void Map::bakeBlockUnsafe(int x, int y)
 				t.variationX = 13;
 				t.variationY = 1;
 			}
-			else if (bottomMiddleDirt)
+			else
 			{
 				t.variationX = 1;
 				t.variationY = 2;
@@ -360,158 +395,247 @@ void Map::bakeBlockUnsafe(int x, int y)
 		else
 		{
 			//it is fully surounded by other blocks
+			
+			if (t.isGrass())
+			{
+				bool leftTopGrass = (x > 0 && y > 0 && unsafeGet(x - 1, y - 1).isGrass());
+				bool leftMiddleGrass = (x > 0 && unsafeGet(x - 1, y).isGrass());
+				bool leftBottomGrass = (x > 0 && y < mapSize.y - 1 && unsafeGet(x - 1, y + 1).isGrass());
 
-		
+				bool rightTopGrass = (x < mapSize.x - 1 && y > 0 && unsafeGet(x + 1, y - 1).isGrass());
+				bool rightMiddleGrass = (x < mapSize.x - 1 && unsafeGet(x + 1, y).isGrass());
+				bool rightBottomGrass = (x < mapSize.x - 1 && y < mapSize.y - 1 && unsafeGet(x + 1, y + 1).isGrass());
 
-			if (
-				leftMiddleDirt
-				&& rightMiddleDirt
-				&& topMiddleDirt
-				&& bottomMiddleDirt
-				)
-			{
-				//fully surounded by dirt
-				t.variationX = 6;
-				t.variationY = 11;
-			}
-			else if (!leftMiddleDirt
-				&& rightMiddleDirt
-				&& topMiddleDirt
-				&& bottomMiddleDirt
-				)
-			{
-				t.variationX = 12;
-				t.variationY = 8;
-			}
-			else if (leftMiddleDirt
-				&& !rightMiddleDirt
-				&& topMiddleDirt
-				&& bottomMiddleDirt
-				)
-			{
-				t.variationX = 12;
-				t.variationY = 5;
-			}
-			else if (leftMiddleDirt
-				&& rightMiddleDirt
-				&& !topMiddleDirt
-				&& bottomMiddleDirt
-				)
-			{
-				t.variationX = 11;
-				t.variationY = 8;
-			}
-			else if (leftMiddleDirt
-				&& rightMiddleDirt
-				&& topMiddleDirt
-				&& !bottomMiddleDirt
-				)
-			{
-				t.variationX = 11;
-				t.variationY = 5;
-			}
-			else if (!leftMiddleDirt
-				&& rightMiddleDirt
-				&& topMiddleDirt
-				&& !bottomMiddleDirt
-				)
-			{
-				//cadran 1
-				t.variationX = 3;
-				t.variationY = 5;
-			}
-			else if (leftMiddleDirt
-				&& !rightMiddleDirt
-				&& topMiddleDirt
-				&& !bottomMiddleDirt
-				)
-			{
-				//cadran 2
-				t.variationX = 2;
-				t.variationY = 5;
-			}
-			else if (leftMiddleDirt
-				&& !rightMiddleDirt
-				&& !topMiddleDirt
-				&& bottomMiddleDirt
-				)
-			{
-				//cadran 3
-				t.variationX = 2;
-				t.variationY = 6;
-			}
-			else if (!leftMiddleDirt
-				&& rightMiddleDirt
-				&& !topMiddleDirt
-				&& bottomMiddleDirt
-				)
-			{
-				//cadran 4
-				t.variationX = 3;
-				t.variationY = 6;
-			}
-			else if (!leftMiddleDirt
-				&& !rightMiddleDirt
-				&& topMiddleDirt
-				&& bottomMiddleDirt)
-			{
-				//top bottom dirt
-				t.variationX = 8;
-				t.variationY = 10;
-			}
-			else if (
-				leftMiddleDirt
-				&& rightMiddleDirt
-				&& !topMiddleDirt
-				&& !bottomMiddleDirt
-				)
-			{
-				//left right dirt
-				t.variationX = 10;
-				t.variationY = 7;
-			}
-			else if (leftMiddleDirt)
-			{
-				t.variationX = 10;
-				t.variationY = 7;
-			}else if (rightMiddleDirt)
-			{
-				t.variationX = 9;
-				t.variationY = 7;
-			}else if (topMiddleDirt)
-			{
-				t.variationX = 9;
-				t.variationY = 8;
-			}else if (bottomMiddleDirt)
-			{
-				t.variationX = 9;
-				t.variationY = 7;
-			}
-			else //no dirt
-			{
-				if (leftTopAir && rightTopAir)
+				bool topMiddleGrass = (y > 0 && unsafeGet(x, y - 1).isGrass());
+				bool bottomMiddleGrass = (y < mapSize.y - 1 && unsafeGet(x, y + 1).isGrass());
+
+				if (leftMiddleGrass && rightMiddleGrass && topMiddleGrass && bottomMiddleGrass)
 				{
-					t.variationX = 6;
+					t.variationX = 2;
 					t.variationY = 1;
+				}else
+				//if (leftMiddleGrass && topMiddleGrass && rightMiddleGrass)
+				//{
+				//	t.variationX = 6;
+				//	t.variationY = 1;
+				//}else if (leftMiddleGrass && bottomMiddleGrass && rightMiddleGrass)
+				//{
+				//	t.variationX = 6;
+				//	t.variationY = 2;
+				//}else if (topMiddleGrass && bottomMiddleGrass && rightMiddleGrass)
+				//{
+				//	t.variationX = 11;
+				//	t.variationY = 0;
+				//}else if (topMiddleGrass && bottomMiddleGrass && leftMiddleGrass)
+				//{
+				//	t.variationX = 10;
+				//	t.variationY = 0;
+				//}else
+				if (leftMiddleGrass && topMiddleGrass)
+				{
+					t.variationX = 3;
+					t.variationY = 6;
 				}
-				else if (rightTopAir && rightBottomAir)
+				else if (rightMiddleGrass && topMiddleGrass)
+				{
+					t.variationX = 2;
+					t.variationY = 6;
+				}
+				else if (rightMiddleGrass && bottomMiddleGrass)
+				{
+					t.variationX = 2;
+					t.variationY = 5;
+				}
+				else if (leftMiddleGrass && bottomMiddleGrass)
+				{
+					t.variationX = 3;
+					t.variationY = 5;
+				}
+				else if (leftMiddleGrass)
 				{
 					t.variationX = 11;
-					t.variationY = 0;
+					t.variationY = 17;
 				}
-				else if (leftTopAir && leftBottomAir)
+				else if (rightMiddleGrass)
 				{
-					t.variationX = 10;
-					t.variationY = 0;
-				}else if (leftBottomAir && rightBottomAir)
+					t.variationX = 8;
+					t.variationY = 17;
+				}
+				else if (bottomMiddleGrass)
 				{
-					t.variationX = 6;
-					t.variationY = 2;
+					t.variationX = 11;
+					t.variationY = 17;
+				}
+				else if (topMiddleGrass)
+				{
+					t.variationX = 11;
+					t.variationY = 18;
 				}
 				else
 				{
-					t.variationX = 1;
-					t.variationY = 1;
+					goto noGrassCouldBePlaced;
+				}
+
+
+			}
+			else
+			{
+				noGrassCouldBePlaced:
+
+				if (
+					leftMiddleDirt
+					&& rightMiddleDirt
+					&& topMiddleDirt
+					&& bottomMiddleDirt
+					)
+				{
+					//fully surounded by dirt
+					t.variationX = 6;
+					t.variationY = 11;
+				}
+				else if (!leftMiddleDirt
+					&& rightMiddleDirt
+					&& topMiddleDirt
+					&& bottomMiddleDirt
+					)
+				{
+					t.variationX = 12;
+					t.variationY = 8;
+				}
+				else if (leftMiddleDirt
+					&& !rightMiddleDirt
+					&& topMiddleDirt
+					&& bottomMiddleDirt
+					)
+				{
+					t.variationX = 12;
+					t.variationY = 5;
+				}
+				else if (leftMiddleDirt
+					&& rightMiddleDirt
+					&& !topMiddleDirt
+					&& bottomMiddleDirt
+					)
+				{
+					t.variationX = 11;
+					t.variationY = 8;
+				}
+				else if (leftMiddleDirt
+					&& rightMiddleDirt
+					&& topMiddleDirt
+					&& !bottomMiddleDirt
+					)
+				{
+					t.variationX = 11;
+					t.variationY = 5;
+				}
+				else if (!leftMiddleDirt
+					&& rightMiddleDirt
+					&& topMiddleDirt
+					&& !bottomMiddleDirt
+					)
+				{
+					//cadran 1
+					t.variationX = 3;
+					t.variationY = 5;
+				}
+				else if (leftMiddleDirt
+					&& !rightMiddleDirt
+					&& topMiddleDirt
+					&& !bottomMiddleDirt
+					)
+				{
+					//cadran 2
+					t.variationX = 2;
+					t.variationY = 5;
+				}
+				else if (leftMiddleDirt
+					&& !rightMiddleDirt
+					&& !topMiddleDirt
+					&& bottomMiddleDirt
+					)
+				{
+					//cadran 3
+					t.variationX = 2;
+					t.variationY = 6;
+				}
+				else if (!leftMiddleDirt
+					&& rightMiddleDirt
+					&& !topMiddleDirt
+					&& bottomMiddleDirt
+					)
+				{
+					//cadran 4
+					t.variationX = 3;
+					t.variationY = 6;
+				}
+				else if (!leftMiddleDirt
+					&& !rightMiddleDirt
+					&& topMiddleDirt
+					&& bottomMiddleDirt)
+				{
+					//top bottom dirt
+					t.variationX = 8;
+					t.variationY = 10;
+				}
+				else if (
+					leftMiddleDirt
+					&& rightMiddleDirt
+					&& !topMiddleDirt
+					&& !bottomMiddleDirt
+					)
+				{
+					//left right dirt
+					t.variationX = 10;
+					t.variationY = 7;
+				}
+				else if (leftMiddleDirt)
+				{
+					t.variationX = 9;
+					t.variationY = 7;
+				}
+				else if (rightMiddleDirt)
+				{
+					t.variationX = 8;
+					t.variationY = 7;
+				}
+				else if (topMiddleDirt)
+				{
+					t.variationX = 8;
+					t.variationY = 6;
+				}
+				else if (bottomMiddleDirt)
+				{
+					t.variationX = 8;
+					t.variationY = 5;
+				}
+				else //no dirt
+				{
+					if (leftTopAir && rightTopAir)
+					{
+						t.variationX = 6;
+						t.variationY = 1;
+					}
+					else if (rightTopAir && rightBottomAir)
+					{
+						t.variationX = 11;
+						t.variationY = 0;
+					}
+					else if (leftTopAir && leftBottomAir)
+					{
+						t.variationX = 10;
+						t.variationY = 0;
+					}
+					else if (leftBottomAir && rightBottomAir)
+					{
+						t.variationX = 6;
+						t.variationY = 2;
+					}
+					else
+					{
+						t.variationX = 1;
+						t.variationY = 1;
+					}
 				}
 			}
 			
