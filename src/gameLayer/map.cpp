@@ -1180,6 +1180,24 @@ void generateMap(Map &m, int seed)
 				{
 					//start spawnTree;
 					m.safeGet(x, y - 1).type = Tile::tree;
+					if (chance(0.2))
+					{
+						auto &b = m.safeGet(x + 1, y - 1);
+						if (b.isAir())
+						{
+							b.type = Tile::tree;
+						}
+					}
+
+					if (chance(0.2))
+					{
+						auto &b = m.safeGet(x - 1, y);
+						if (b.isAir())
+						{
+							b.type = Tile::tree;
+						}
+					}
+
 
 					int h = randomVal(3, 8);
 					bool placedBranch = true;
