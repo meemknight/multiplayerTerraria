@@ -10,6 +10,7 @@
 #include "imfilebrowser.h"
 #include <gl2d/gl2d.h>
 #include "sprites.h"
+#include <tileRenderer.h>
 
 struct GameData
 {
@@ -19,7 +20,7 @@ struct GameData
 
 gl2d::Renderer2D renderer;
 
-Sprite dirt;
+TileRenderer tileRenderer;
 
 
 bool initGame()
@@ -28,7 +29,7 @@ bool initGame()
 
 	renderer.create();
 
-	dirt.load(RESOURCES_PATH "Tiles_0.png", 16, 16);
+	tileRenderer.loadAll();
 
 	return true;
 }
@@ -54,8 +55,10 @@ bool gameLogic(float deltaTime)
 	for (int j = 0; j < 5; j++)
 		for (int i = 0; i < 5; i++)
 		{
+			auto &s = tileRenderer.sprites[Tiles::grass];
+
 			renderer.renderRectangle({100*i, 100*j, 100, 100}, {}, {},
-				dirt.t, dirt.getTextureCoords(i, j));
+				s.t, s.getTextureCoords(i, j));
 		}
 
 
