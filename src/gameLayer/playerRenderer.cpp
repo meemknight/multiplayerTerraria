@@ -36,7 +36,7 @@ void PlayerRenderer::loadAll()
 }
 
 void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSkin &skin, bool movingRight
-	, PlayerAnimation &animation)
+	, PlayerAnimation &animation, float size)
 {
 
 	float pixelSize = 1.f / 16;
@@ -52,7 +52,7 @@ void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSki
 	auto drawPart = [&](int i, int x, int y, glm::vec3 color)
 	{
 		auto &p = loadedBodyParts[i];
-		renderer.renderRectangle({pos, pixelSize2 * glm::vec2(p.atlasSize)},
+		renderer.renderRectangle({pos, size * pixelSize2 * glm::vec2(p.atlasSize)},
 			glm::vec4(color, 1.f), {}, {},
 			p.s.t, p.s.getTextureCoords(x, y, !movingRight));
 	};
@@ -60,7 +60,7 @@ void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSki
 	auto drawHair = [&](int i, int x, int y, glm::vec3 color)
 	{
 		auto &p = hairSprites[i];
-		renderer.renderRectangle({pos, pixelSize2 * glm::vec2(p.blockSize)},
+		renderer.renderRectangle({pos, size * pixelSize2 * glm::vec2(p.blockSize)},
 			glm::vec4(color, 1.f), {}, {},
 			p.t, p.getTextureCoords(x, y, !movingRight));
 	};
@@ -74,7 +74,7 @@ void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSki
 	
 	if (animation.isFrameUp)
 	{
-		pos.y -= pixelSize * 2;
+		pos.y -= pixelSize * 2 * size;
 	}
 
 	drawPart(rightArm, animation.handFrameX, 2, skin.skinColor); //left arm
@@ -93,7 +93,7 @@ void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSki
 
 	if (animation.isFrameUp)
 	{
-		pos.y += pixelSize * 2;
+		pos.y += pixelSize * 2 * size;
 	}
 	
 	if (skin.hasPants)

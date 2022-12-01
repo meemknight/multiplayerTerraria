@@ -14,28 +14,36 @@
 #include "map.h"
 #include "playerRenderer.h"
 #include <entity.h>
+#include <gameplay.h>
+#include <glui/glui.h>
 
 #undef min
 #undef max
 
 struct GameData
 {
-	float zoom = 1;
-	Player player;
+	PlayerSkin playerSkin = {};
 
 }gameData;
 
 gl2d::Renderer2D renderer;
 
 TileRenderer tileRenderer;
-Map map;
 
 PlayerRenderer playerRenderer;
+
+gl2d::Texture logoTexture;
+gl2d::Texture splashScreenTexture;
+
+gl2d::Font font;
+
+bool gameplayRunning = false;
 
 
 bool initGame()
 {
 	gl2d::init();
+	glui::gluiInit();
 
 	renderer.create();
 	renderer.currentCamera.zoom = 100;
@@ -44,18 +52,19 @@ bool initGame()
 
 	playerRenderer.loadAll();
 
-	generateMap(map, 1234);
+	logoTexture.loadFromFile(RESOURCES_PATH "Logo.png");
 
-	map.renderMapIntoTexture();
+	splashScreenTexture.loadFromFile(RESOURCES_PATH "splash.png");
+
+	font.createFromFile(RESOURCES_PATH "roboto_black.ttf");
+
 
 	if (!platform::readEntireFile(RESOURCES_PATH "gameData.data", &gameData, sizeof(GameData)))
 	{
 		gameData = GameData();
 	}
 
-	renderer.currentCamera.zoom = gameData.zoom;
-
-	gameData.player.position.size = PLAYER_SIZE;
+	glClearColor(0.4, 0.6, 0.9, 0);
 
 	return true;
 }
@@ -71,126 +80,77 @@ bool gameLogic(float deltaTime)
 
 	glViewport(0, 0, w, h);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glClearColor(1, 1, 1, 0);
 
 	renderer.updateWindowMetrics(w, h);
 
 #pragma endregion
 
-#pragma region input
-	
-	const bool CREATIVE = 0;
-
-	if(CREATIVE)
+	if (!gameplayRunning)
 	{
-		glm::vec2 direction = {};
-
-		if (platform::isKeyHeld(platform::Button::A))
+		glui::Begin(1);
 		{
-			direction.x -= 1;
-		}
+			glui::Texture(1, logoTexture);
 
-		if (platform::isKeyHeld(platform::Button::D))
-		{
-			direction.x += 1;
-		}
+			if(glui::Button("Start game", Colors_White))
+			{
+				initGameplay(gameData.playerSkin);
+				gameplayRunning = true;
+			}
 
-		if (platform::isKeyHeld(platform::Button::W))
-		{
-			direction.y -= 1;
-		}
+			glui::BeginMenu("Costumize character", Colors_White, {});
+			{
+				glui::colorPicker("Hair Color", &gameData.playerSkin.hairColor[0]);
+				glui::sliderInt("Hair Type", &gameData.playerSkin.hairType, 0, 19);
+				glui::colorPicker("Eye color", &gameData.playerSkin.eyeColor[0]);
+				glui::colorPicker("Skin color", &gameData.playerSkin.skinColor[0]);
+				glui::colorPicker("Clothes color", &gameData.playerSkin.clothesColor[0]);
+				glui::colorPicker("Pants color", &gameData.playerSkin.pantsColor[0]);
+				
+				glui::newColum(1);
 
-		if (platform::isKeyHeld(platform::Button::S))
-		{
-			direction.y += 1;
-		}
+				glm::vec4 transform = {};
+				bool hovered = false;
+				if (glui::CustomWidget(2, &transform, &hovered))
+				{
+					renderer.pushCamera();
 
-		if (length(direction) != 0.f)
-		{
-			direction = normalize(direction);
-		}
+					static PlayerAnimation animation;
 
-		gameData.player.position.position += deltaTime * direction * 20.f;
+					if (hovered)
+					{
+						animation.state = PlayerAnimation::running;
+					}
+					else
+					{
+						animation.state = PlayerAnimation::stay;
+					}
+
+					animation.update(deltaTime);
+
+					playerRenderer.render(renderer, glm::vec2{transform.x, transform.y}, gameData.playerSkin, true, animation,
+						100);
+
+					renderer.popCamera();
+				}
+
+				glui::Toggle("Has clothes", Colors_White, &gameData.playerSkin.hasClothes);
+				glui::Toggle("Has pants", Colors_White, &gameData.playerSkin.hasPants);
+				
+
+			}
+			glui::EndMenu();
+
+		}
+		glui::End();
+
+		glui::renderFrame(renderer, font, platform::getRelMousePosition(), platform::isLMousePressed(),
+			platform::isLMouseHeld(), platform::isLMouseReleased(), platform::isKeyReleased(platform::Button::Escape),
+			platform::getTypedInput(), deltaTime);
 	}
 	else
 	{
-		float direction = {};
-
-		if (platform::isKeyHeld(platform::Button::A))
-		{
-			direction -= 1;
-		}
-
-		if (platform::isKeyHeld(platform::Button::D))
-		{
-			direction += 1;
-		}
-
-		gameData.player.moveVelocityX(10 * deltaTime * direction);
-
-		if (platform::isKeyPressedOn(platform::Button::Space))
-		{
-			gameData.player.jump();
-		}
+		runGameplay(deltaTime, renderer, tileRenderer, playerRenderer);
 	}
-
-
-
-#pragma endregion
-
-#pragma region player phisics
-
-	if (!CREATIVE)
-	{
-		gameData.player.applyGravity(9.f);
-
-		gameData.player.updatePhisics(deltaTime);
-
-		gameData.player.resolveConstrains(map);
-	}
-
-	gameData.player.updateMove();
-
-	gameData.player.playerAnimation.update(deltaTime);
-
-#pragma endregion
-
-	
-	renderer.currentCamera.follow(gameData.player.position.getCenter(), 0.5, 0.001, 3, w, h);
-
-	tileRenderer.renderMap(renderer, map);
-
-	playerRenderer.render(renderer, gameData.player.position.position, gameData.player.skin,
-		gameData.player.movingRight, gameData.player.playerAnimation);
-
-
-#pragma region imgui
-	ImGui::Begin("camera");
-
-	ImGui::DragFloat("zoom", &renderer.currentCamera.zoom, 1, 1, 500);
-	ImGui::DragFloat2("player pos", &gameData.player.position.position[0], 5);
-	
-	gameData.zoom = renderer.currentCamera.zoom;
-
-	{
-		auto s = ImGui::GetContentRegionMax();
-
-		if (ImGui::BeginChild(6996, {}, false, ImGuiWindowFlags_HorizontalScrollbar))
-		{
-
-			float xsize = std::max((int)(s.x * 1) - 10, (int)(100 * 1));
-			float aspect = (float)map.mapSize.x/map.mapSize.y;
-
-			ImGui::Image((void *)map.texture, {2400,2400 / aspect},
-				{0, 0}, {1, 1});
-
-			ImGui::EndChild();
-		}
-	}
-
-
-	ImGui::End();
-#pragma endregion
 
 
 

@@ -25,7 +25,7 @@ void Player::move(glm::vec2 dir)
 {
 	if (length(dir) == 0.f) { return; }
 
-	keyPressedThisFrame = true;
+	movingThisFrame = true;
 	position.position += dir;
 }
 
@@ -36,9 +36,6 @@ float startVelocity = 10;
 void Player::moveVelocityX(float dir)
 {
 	if (dir == 0) { return; }
-
-	keyPressedThisFrame = true;
-
 
 	movingThisFrame = true;
 
@@ -77,7 +74,7 @@ void Player::moveVelocityX(float dir)
 				velocity.x = -startVelocity;
 			}
 
-			velocity.x -= dir;
+			velocity.x += dir;
 		
 			if (velocity.x < -maxMoveVelocity)
 			{
@@ -124,7 +121,7 @@ void Player::updateMove()
 		movingRight = false;
 	}
 
-	if (keyPressedThisFrame)
+	if (movingThisFrame)
 	{
 		playerAnimation.state = PlayerAnimation::STATES::running;
 	}
@@ -138,7 +135,6 @@ void Player::updateMove()
 
 	movingThisFrame = false;
 	grounded = false;
-	keyPressedThisFrame = false;
 
 }
 

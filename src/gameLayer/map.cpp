@@ -869,10 +869,10 @@ void generateMap(Map &m, int seed)
 	{
 		FastNoiseSIMD *horizonNoiseSet = FastNoiseSIMD::NewFastNoiseSIMD(seed);
 
-		float scale = 1.5;
+		float scale = 0.15;
 		horizonNoiseSet->SetAxisScales(scale, scale, scale);
 		horizonNoiseSet->SetFrequency(0.030);
-		horizonNoiseSet->SetFractalOctaves(5);
+		horizonNoiseSet->SetFractalOctaves(3);
 
 		horizonLine = horizonNoiseSet->GetPerlinFractalSet(0, 0, 0, mapW, 1, 1);
 		stoneLine = horizonNoiseSet->GetPerlinFractalSet(0, 0, 45, mapW, 1, 1);

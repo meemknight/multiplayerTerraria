@@ -71,6 +71,6 @@ struct PlayerRenderer
 	void loadAll();
 
 	void render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSkin &skin,
-		bool movingRight, PlayerAnimation &animation);
+		bool movingRight, PlayerAnimation &animation, float size = 1.f);
 
 };

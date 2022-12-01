@@ -1256,6 +1256,10 @@ namespace glui
 			if (hovered)
 			{
 				*hovered = find->second.hovered;
+			}
+
+			if (clicked)
+			{
 				*clicked = find->second.clicked;
 			}
 

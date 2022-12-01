@@ -1776,6 +1776,7 @@ namespace gl2d
 		}
 
 		if (len > min)
+		{
 			if (len > max)
 			{
 				len = max;
@@ -1786,16 +1787,17 @@ namespace gl2d
 			{
 				position += delta * speed;
 
-				glm::vec2 delta2 = pos - position;
-				bool signX2 = delta.x >= 0;
-				bool signY2 = delta.y >= 0;
-
-				if (signX2 != signX || signY2 != signY || glm::length(delta2) > len)
-				{
-					position = pos;
-				}
+			
 			}
 
+			glm::vec2 delta2 = pos - position;
+			bool signX2 = delta.x >= 0;
+			bool signY2 = delta.y >= 0;
+			if (signX2 != signX || signY2 != signY || glm::length(delta2) > len)
+			{
+				position = pos;
+			}
+		}
 	}
 
 	glm::vec2 Camera::convertPoint(const glm::vec2 &p, float windowW, float windowH)

@@ -43,7 +43,6 @@ struct Player
 
 	bool movingThisFrame = false;
 
-	bool keyPressedThisFrame = false;
 
 	//should be called only once per frame last
 	void updateMove();
