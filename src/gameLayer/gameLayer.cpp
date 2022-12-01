@@ -78,7 +78,7 @@ bool gameLogic(float deltaTime)
 
 	tileRenderer.renderMap(renderer, map);
 
-	playerRenderer.render(renderer, gameData.playerPos);
+	playerRenderer.render(renderer, gameData.playerPos, PlayerSkin{});
 
 
 #pragma region imgui
