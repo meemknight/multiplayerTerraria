@@ -12,6 +12,7 @@
 #include "sprites.h"
 #include <tileRenderer.h>
 #include "map.h"
+#include "playerRenderer.h"
 
 #undef min
 #undef max
@@ -29,6 +30,8 @@ gl2d::Renderer2D renderer;
 TileRenderer tileRenderer;
 Map map;
 
+PlayerRenderer playerRenderer;
+
 
 bool initGame()
 {
@@ -38,6 +41,8 @@ bool initGame()
 	renderer.currentCamera.zoom = 100;
 
 	tileRenderer.loadAll();
+
+	playerRenderer.loadAll();
 
 	generateMap(map, 1234);
 
@@ -73,6 +78,10 @@ bool gameLogic(float deltaTime)
 
 	tileRenderer.renderMap(renderer, map);
 
+	playerRenderer.render(renderer, gameData.playerPos);
+
+
+#pragma region imgui
 	ImGui::Begin("camera");
 
 	ImGui::DragFloat("zoom", &renderer.currentCamera.zoom, 1, 1, 500);
@@ -98,6 +107,7 @@ bool gameLogic(float deltaTime)
 
 
 	ImGui::End();
+#pragma endregion
 
 
 

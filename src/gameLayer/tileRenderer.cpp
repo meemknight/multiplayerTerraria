@@ -29,8 +29,8 @@ void TileRenderer::renderMap(gl2d::Renderer2D &renderer, Map &map)
 {
 	auto viewRect = renderer.getViewRect();
 
-	glm::ivec2 minV = {viewRect.x, viewRect.y};
-	glm::ivec2 maxV = minV + glm::ivec2{viewRect.z+1, viewRect.w+1};
+	glm::ivec2 minV = {viewRect.x-2, viewRect.y-2};
+	glm::ivec2 maxV = minV + glm::ivec2{viewRect.z+4, viewRect.w+4};
 
 	minV = glm::max(minV, {0,0});
 	maxV = glm::min(maxV, {map.mapSize.x,map.mapSize.y});
