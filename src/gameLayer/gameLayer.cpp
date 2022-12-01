@@ -79,6 +79,7 @@ bool gameLogic(float deltaTime)
 
 #pragma region input
 	
+	if(0)
 	{
 		glm::vec2 direction = {};
 
@@ -109,9 +110,37 @@ bool gameLogic(float deltaTime)
 
 		gameData.player.position.position += deltaTime * direction * 20.f;
 	}
+	else
+	{
+		float direction = {};
+
+		if (platform::isKeyHeld(platform::Button::A))
+		{
+			direction -= 1;
+		}
+
+		if (platform::isKeyHeld(platform::Button::D))
+		{
+			direction += 1;
+		}
+
+		gameData.player.moveVelocityX(10 * deltaTime * direction);
+
+		if (platform::isKeyPressedOn(platform::Button::Space))
+		{
+			gameData.player.jump();
+		}
+	}
+
+
+
 #pragma endregion
 
 #pragma region player phisics
+
+	gameData.player.applyGravity(9.f);
+
+	gameData.player.updatePhisics(deltaTime);
 
 	gameData.player.resolveConstrains(map);
 
@@ -120,7 +149,7 @@ bool gameLogic(float deltaTime)
 #pragma endregion
 
 	
-	renderer.currentCamera.follow(gameData.player.position.getCenter(), 1, 0.01, 3, w, h);
+	renderer.currentCamera.follow(gameData.player.position.getCenter(), 0.5, 0.001, 3, w, h);
 
 	tileRenderer.renderMap(renderer, map);
 

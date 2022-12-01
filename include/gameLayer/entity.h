@@ -25,12 +25,27 @@ struct Player
 
 	glm::vec2 lastPos{};
 
+	glm::vec2 velocity = {};
+
 	bool movingRight = 0;
+	bool grounded = 0;
 
 	void move(glm::vec2 dir);
 
-	//should be called only once per frame
+	void moveVelocityX(float dir);
+
+	void jump();
+
+	void applyGravity(float gravity);
+
+	bool movingThisFrame = false;
+
+	//should be called only once per frame last
 	void updateMove();
+
+	//this should be called before collisions 
+	void updatePhisics(float deltaTime);
+
 
 	void resolveConstrains(Map &mapData);
 

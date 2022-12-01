@@ -26,6 +26,87 @@ void Player::move(glm::vec2 dir)
 	position.position += dir;
 }
 
+
+float maxMoveVelocity = 25;
+float startVelocity = 10;
+
+void Player::moveVelocityX(float dir)
+{
+	if (dir == 0) { return; }
+
+	movingThisFrame = true;
+
+	if (dir > 0 && velocity.x < 0)
+	{
+		velocity.x = 0;
+	}
+	else if (dir < 0 && velocity.x > 0)
+	{
+		velocity.x = 0;
+	}
+
+	if (dir > 0)
+	{
+		if (velocity.x < maxMoveVelocity)
+		{
+			if (velocity.x == 0)
+			{
+				velocity.x = startVelocity;
+			}
+
+			velocity.x += dir;
+
+			if (velocity.x > maxMoveVelocity)
+			{
+				velocity.x = maxMoveVelocity;
+			}
+		}
+	}
+	else if (dir < 0)
+	{
+		if (velocity.x > -maxMoveVelocity)
+		{
+			if (velocity.x == 0)
+			{
+				velocity.x = -startVelocity;
+			}
+
+			velocity.x -= dir;
+		
+			if (velocity.x < -maxMoveVelocity)
+			{
+				velocity.x = -maxMoveVelocity;
+			}
+		}
+	}
+
+	
+
+}
+
+void Player::jump()
+{
+	velocity.y = -120;
+}
+
+const float terminalVelocity = 60;
+
+void Player::applyGravity(float gravity)
+{
+
+	if (velocity.y < terminalVelocity)
+	{
+		velocity.y += gravity;
+
+		if (velocity.y > terminalVelocity)
+		{
+			velocity.y = terminalVelocity;
+		}
+	}
+
+}
+
+
 void Player::updateMove()
 {
 	if (lastPos.x - position.position.x < 0)
@@ -37,7 +118,45 @@ void Player::updateMove()
 		movingRight = false;
 	}
 
+
 	lastPos = position.position;
+
+	movingThisFrame = false;
+	grounded = false;
+
+}
+
+float groundDrag = 60.f;
+float airDrag = 30.f;
+
+void Player::updatePhisics(float deltaTime)
+{
+	float drag = groundDrag;
+
+	if (!movingThisFrame)
+	{
+		if (velocity.x > 0)
+		{
+			velocity -= drag * deltaTime;
+
+			if (velocity.x < 0)
+			{
+				velocity.x = 0;
+			}
+		}
+		else if (velocity.x < 0)
+		{
+			velocity -= drag * deltaTime;
+
+			if (velocity.x > 0)
+			{
+				velocity.x = 0;
+			}
+		}
+	}
+
+	position.position += velocity * deltaTime;
+
 }
 
 void Player::checkCollisionBrute(glm::vec2 &pos, glm::vec2 lastPos, Map &mapData, bool &upTouch, bool &downTouch, bool &leftTouch, bool &rightTouch)
@@ -197,9 +316,18 @@ void Player::resolveConstrains(Map &mapData)
 end:
 
 	//clamp the box if needed
-	if (pos.x < 0) { pos.x = 0; }
+	if (pos.x < 0) { pos.x = 0; leftTouch = true; }
 	if (pos.x + position.size.x > (mapData.mapSize.x) * BLOCK_SIZE) 
-	{ pos.x = ((mapData.mapSize.y) * BLOCK_SIZE) - position.size.x; }
-	void;
+	{pos.x = ((mapData.mapSize.y) * BLOCK_SIZE) - position.size.x; rightTouch = true;}
+	
+
+	if (leftTouch && velocity.x < 0) { velocity.x = 0; }
+	if (rightTouch && velocity.x > 0) { velocity.x = 0; }
+
+	if (upTouch && velocity.y < 0) { velocity.y = 0; }
+	if (downTouch && velocity.y > 0) { velocity.y = 0; }
+
+	if (downTouch) { grounded = true; }
+	else { grounded = false; }
 
 }
