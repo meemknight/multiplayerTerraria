@@ -1,24 +1,177 @@
 #include <gameplay.h>
+#include <enet/enet.h>
+#include <packet.h>
+#undef max
+#undef min
 
 float zoom = 30;
 Player player;
-Map map;
+static Map map;
 
-void initGameplay(PlayerSkin playerSkin)
+ENetHost *client;
+ENetPeer *server;
+
+int32_t cid;
+
+void sendPlayerData(Player &e, bool reliable)
 {
-	generateMap(map, 1234);
-
-	map.renderMapIntoTexture();
-
-	player = Player{};
-	player.skin = playerSkin;
-	zoom = 30;
-	player.position.size = PLAYER_SIZE;
+	Packet p;
+	p.cid = cid;
+	p.header = headerUpdateConnection;
+	sendPacket(server, p, (const char *)&e, sizeof(Player), reliable, 0);
 }
+
+bool joinServer(PlayerSkin playerSkin)
+{
+	assert(!client);
+		
+	client = enet_host_create(nullptr, 1, 1, 0, 0);
+
+	ENetAddress adress;
+	ENetEvent event;
+	enet_address_set_host(&adress, "127.0.0.1");
+	adress.port = 7779;
+
+
+	server = enet_host_connect(client, &adress, SERVER_CHANNELS, 0);
+
+	if (server == nullptr)
+	{
+		enet_host_destroy(client);
+		client = 0;
+
+		return false;
+	}
+
+	if (enet_host_service(client, &event, 5000) > 0
+		&& event.type == ENET_EVENT_TYPE_CONNECT)
+	{
+		//std::cout << "connected\n";
+	}
+	else
+	{
+		//we first should recieve a connect message, if not we couldn't connect
+		enet_peer_reset(server);
+		enet_host_destroy(client);
+		client = 0;
+		server = 0;
+		
+		return false;
+	}
+
+	if (enet_host_service(client, &event, 5000) > 0
+		&& event.type == ENET_EVENT_TYPE_RECEIVE)
+	{
+		Packet p = {};
+		size_t size;
+		auto data = parsePacket(event, p, size);
+
+		if (p.header != headerReceiveCIDAndData)
+		{
+			enet_peer_reset(server);
+			enet_host_destroy(client);
+			client = 0;
+			server = 0;
+			return false;
+		}
+
+		cid = p.cid;
+
+		glm::ivec2 mapSize = *(glm::ivec2*)data;
+		
+		map.create(mapSize.x, mapSize.y);
+
+		Player player; //todo recieved by the server
+		player.skin = playerSkin;
+
+		sendPlayerData(player, true);
+
+		//std::cout << "received cid: " << cid << "\n";
+		enet_packet_destroy(event.packet);
+	}
+	else
+	{
+		enet_peer_reset(server);
+		enet_host_destroy(client);
+		client = 0;
+		server = 0;
+
+		return false;
+	}
+
+	if (enet_host_service(client, &event, 5000) > 0
+		&& event.type == ENET_EVENT_TYPE_RECEIVE)
+	{
+		Packet p = {};
+		size_t size;
+		auto data = parsePacket(event, p, size);
+
+		if (p.header != headerReceiveMapData)
+		{
+			enet_peer_reset(server);
+			enet_host_destroy(client);
+			client = 0;
+			server = 0;
+			return false;
+		}
+
+		Tile *mapTiles = (Tile *)data;
+
+		std::memcpy(&map.tiles[0], mapTiles, sizeof(Tile) * map.mapSize.x * map.mapSize.y);
+
+		enet_packet_destroy(event.packet);
+
+	}
+	else
+	{
+		enet_peer_reset(server);
+		enet_host_destroy(client);
+		client = 0;
+		server = 0;
+
+		return false;
+	}
+
+	return true;
+
+}
+
+
+void serverUpdate(ENetHost *client)
+{
+	ENetEvent event;
+	if (enet_host_service(client, &event, 0) > 0)
+	{
+		switch (event.type)
+		{
+		case ENET_EVENT_TYPE_RECEIVE:
+		{
+		
+		
+			enet_packet_destroy(event.packet);
+			break;
+		}
+		
+		case ENET_EVENT_TYPE_DISCONNECT:
+		{
+			//std::cout << "disconect\n";
+			exit(0);
+
+		
+			break;
+		}
+
+		}
+	}
+
+}
+
 
 void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tileRenderer,
 	PlayerRenderer &playerRenderer)
 {
+
+	serverUpdate(client);
 
 	renderer.pushCamera();
 	renderer.currentCamera.zoom = zoom;
@@ -141,3 +294,4 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 	renderer.popCamera();
 
 }
+

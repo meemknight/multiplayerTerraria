@@ -12,9 +12,10 @@
 #include <entity.h>
 #include <platformInput.h>
 
-void initGameplay(PlayerSkin playerSkin);
+
+//void initGameplay(PlayerSkin playerSkin);
 
 void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tileRenderer,
 	PlayerRenderer &playerRenderer);
 
-
+bool joinServer(PlayerSkin playerSkin);

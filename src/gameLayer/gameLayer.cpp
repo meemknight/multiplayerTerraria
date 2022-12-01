@@ -16,6 +16,8 @@
 #include <entity.h>
 #include <gameplay.h>
 #include <glui/glui.h>
+#include <enet/enet.h>
+#include <server.h>
 
 #undef min
 #undef max
@@ -44,6 +46,7 @@ bool initGame()
 {
 	gl2d::init();
 	glui::gluiInit();
+	enet_initialize();
 
 	renderer.create();
 	renderer.currentCamera.zoom = 100;
@@ -93,8 +96,17 @@ bool gameLogic(float deltaTime)
 
 			if(glui::Button("Start game", Colors_White))
 			{
-				initGameplay(gameData.playerSkin);
-				gameplayRunning = true;
+				
+				launchServer();
+
+				if (joinServer(gameData.playerSkin))
+				{
+					gameplayRunning = true;
+				}
+				else
+				{
+					std::cout << "Error joining server\n";
+				}
 			}
 
 			glui::BeginMenu("Costumize character", Colors_White, {});
