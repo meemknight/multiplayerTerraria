@@ -19,6 +19,7 @@ struct Transform
 
 #define PLAYER_SIZE glm::vec2(22.f/16.f,46.f/ 16.f)
 
+
 struct Player
 {
 	Transform position = {glm::vec2(0,0), PLAYER_SIZE};
@@ -30,6 +31,8 @@ struct Player
 	bool movingRight = 0;
 	bool grounded = 0;
 
+	PlayerAnimation playerAnimation = {};
+
 	void move(glm::vec2 dir);
 
 	void moveVelocityX(float dir);
@@ -39,6 +42,8 @@ struct Player
 	void applyGravity(float gravity);
 
 	bool movingThisFrame = false;
+
+	bool keyPressedThisFrame = false;
 
 	//should be called only once per frame last
 	void updateMove();

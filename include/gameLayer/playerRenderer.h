@@ -1,6 +1,29 @@
 #pragma once
 #include "sprites.h"
 
+struct PlayerAnimation
+{
+	enum STATES
+	{
+		stay = 0,
+		running,
+	};
+
+	int state = 0;
+	float timer = 0;
+
+	int headFrame = 0;
+	int hairFrame = 0;
+	int handFrameX = 2;
+	int handFrameY = 0;
+	bool isFrameUp = 0;
+	int shoulderPadFrame = 0;
+
+	void update(float deltaTime);
+
+};
+
+
 struct BodyPart
 {
 	BodyPart() {};
@@ -47,6 +70,7 @@ struct PlayerRenderer
 
 	void loadAll();
 
-	void render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSkin &skin, bool movingRight);
+	void render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSkin &skin,
+		bool movingRight, PlayerAnimation &animation);
 
 };

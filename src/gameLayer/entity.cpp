@@ -23,6 +23,9 @@ glm::vec2 Transform::getBottomCenter()
 
 void Player::move(glm::vec2 dir)
 {
+	if (length(dir) == 0.f) { return; }
+
+	keyPressedThisFrame = true;
 	position.position += dir;
 }
 
@@ -33,6 +36,9 @@ float startVelocity = 10;
 void Player::moveVelocityX(float dir)
 {
 	if (dir == 0) { return; }
+
+	keyPressedThisFrame = true;
+
 
 	movingThisFrame = true;
 
@@ -118,20 +124,32 @@ void Player::updateMove()
 		movingRight = false;
 	}
 
+	if (keyPressedThisFrame)
+	{
+		playerAnimation.state = PlayerAnimation::STATES::running;
+	}
+	else
+	{
+		playerAnimation.state = {};
+	}
+
 
 	lastPos = position.position;
 
 	movingThisFrame = false;
 	grounded = false;
+	keyPressedThisFrame = false;
 
 }
 
-float groundDrag = 60.f;
-float airDrag = 30.f;
+float groundDrag = 120.f;
+float airDrag = 60.f;
 
 void Player::updatePhisics(float deltaTime)
 {
 	float drag = groundDrag;
+
+	if (!grounded) { drag = airDrag; }
 
 	if (!movingThisFrame)
 	{
@@ -146,7 +164,7 @@ void Player::updatePhisics(float deltaTime)
 		}
 		else if (velocity.x < 0)
 		{
-			velocity -= drag * deltaTime;
+			velocity += drag * deltaTime;
 
 			if (velocity.x > 0)
 			{

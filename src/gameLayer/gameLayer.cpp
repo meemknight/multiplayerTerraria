@@ -79,7 +79,9 @@ bool gameLogic(float deltaTime)
 
 #pragma region input
 	
-	if(0)
+	const bool CREATIVE = 0;
+
+	if(CREATIVE)
 	{
 		glm::vec2 direction = {};
 
@@ -138,13 +140,18 @@ bool gameLogic(float deltaTime)
 
 #pragma region player phisics
 
-	gameData.player.applyGravity(9.f);
+	if (!CREATIVE)
+	{
+		gameData.player.applyGravity(9.f);
 
-	gameData.player.updatePhisics(deltaTime);
+		gameData.player.updatePhisics(deltaTime);
 
-	gameData.player.resolveConstrains(map);
+		gameData.player.resolveConstrains(map);
+	}
 
 	gameData.player.updateMove();
+
+	gameData.player.playerAnimation.update(deltaTime);
 
 #pragma endregion
 
@@ -154,7 +161,7 @@ bool gameLogic(float deltaTime)
 	tileRenderer.renderMap(renderer, map);
 
 	playerRenderer.render(renderer, gameData.player.position.position, gameData.player.skin,
-		gameData.player.movingRight);
+		gameData.player.movingRight, gameData.player.playerAnimation);
 
 
 #pragma region imgui

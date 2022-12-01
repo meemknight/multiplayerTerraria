@@ -35,7 +35,8 @@ void PlayerRenderer::loadAll()
 
 }
 
-void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSkin &skin, bool movingRight)
+void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSkin &skin, bool movingRight
+	, PlayerAnimation &animation)
 {
 
 	float pixelSize = 1.f / 16;
@@ -44,6 +45,9 @@ void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSki
 	pos.x -= pixelSize * 8;
 	pos.y -= pixelSize * 4;
 
+
+	int headFrame = animation.headFrame;
+	int hairFrame = animation.hairFrame;
 
 	auto drawPart = [&](int i, int x, int y, glm::vec3 color)
 	{
@@ -62,35 +66,86 @@ void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSki
 	};
 
 	//head
-	drawPart(head, 0, 0, skin.skinColor);
-	drawPart(eyeWhite, 0, 0, Colors_White);
-	drawPart(eye, 0, 0, skin.eyeColor);
+	drawPart(head, 0, headFrame, skin.skinColor);
+	drawPart(eyeWhite, 0, headFrame, Colors_White);
+	drawPart(eye, 0, headFrame, skin.eyeColor);
 
-	drawHair(skin.hairType, 0, 0, skin.hairColor); //hair
+	drawHair(skin.hairType, 0, hairFrame, skin.hairColor); //hair
 	
-	drawPart(rightArm, 2, 2, skin.skinColor); //left arm
+	if (animation.isFrameUp)
+	{
+		pos.y -= pixelSize * 2;
+	}
+
+	drawPart(rightArm, animation.handFrameX, 2, skin.skinColor); //left arm
 	
 	if (skin.hasClothes)
 	{
 		drawPart(clothes, 0, 0, skin.clothesColor);
-		drawPart(rightArm, 2, 0, skin.skinColor);
+		drawPart(rightArm, animation.handFrameX, animation.handFrameY, skin.skinColor);
 		drawPart(clothes, 0, 3, skin.clothesColor); // shoulder pad
 	}
 	else
 	{
 		drawPart(torso, 0, 0, skin.skinColor); 
-		drawPart(rightArm, 2, 0, skin.skinColor);
+		drawPart(rightArm, animation.handFrameX, animation.handFrameY, skin.skinColor);
+	}
+
+	if (animation.isFrameUp)
+	{
+		pos.y += pixelSize * 2;
 	}
 	
 	if (skin.hasPants)
 	{
-		drawPart(pants, 0, 0, skin.pantsColor);
+		drawPart(pants, 0, headFrame, skin.pantsColor);
 	}
 	else
 	{
-		drawPart(legs, 0, 0, skin.skinColor);
+		drawPart(legs, 0, headFrame, skin.skinColor);
 	}
 
+
+
+}
+
+void PlayerAnimation::update(float deltaTime)
+{
+	if (state == stay)
+	{
+		*this = PlayerAnimation{};
+	}
+	else if (state == running)
+	{
+		float runSpeed = 0.08;
+
+		timer += deltaTime;
+
+		if (headFrame >= 6)
+		{
+			headFrame -= 6;
+		}
+
+		while (timer >= runSpeed)
+		{
+			timer -= runSpeed;
+			headFrame++;
+		}
+
+		headFrame %= 14;
+				
+		if ((headFrame >= 1 && headFrame <= 3) || (headFrame >= 8 && headFrame <= 10))
+		{ isFrameUp = true; }else{ isFrameUp = false; }
+
+		hairFrame = headFrame;
+
+		handFrameX = (headFrame/2) % 4 + 3;
+		handFrameY = 1;
+
+		headFrame += 6;
+
+
+	}
 
 
 }
