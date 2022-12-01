@@ -47,6 +47,6 @@ struct PlayerRenderer
 
 	void loadAll();
 
-	void render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSkin &skin);
+	void render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSkin &skin, bool movingRight);
 
 };

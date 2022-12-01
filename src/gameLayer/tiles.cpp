@@ -62,3 +62,8 @@ bool Tile::isTree()
 {
 	return type == tree || type == Tile::treeTop;
 }
+
+bool Tile::isCollidable()
+{
+	return !isAir() && !isTree();
+}

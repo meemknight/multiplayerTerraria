@@ -31,15 +31,39 @@ void TileRenderer::renderMap(gl2d::Renderer2D &renderer, Map &map)
 
 	glm::ivec2 minV = {viewRect.x-2, viewRect.y-2};
 	glm::ivec2 maxV = minV + glm::ivec2{viewRect.z+4, viewRect.w+4};
-
 	minV = glm::max(minV, {0,0});
 	maxV = glm::min(maxV, {map.mapSize.x,map.mapSize.y});
+
+	glm::ivec2 minForTrees = {viewRect.x - 8, viewRect.y - 8};
+	glm::ivec2 maxForTrees = minForTrees + glm::ivec2{viewRect.z + 16, viewRect.w + 16};
+	minForTrees = glm::max(minForTrees, {0,0});
+	maxForTrees = glm::min(maxForTrees, {map.mapSize.x,map.mapSize.y});
+
+	for (int j = minForTrees.y; j < maxForTrees.y; j++)
+		for (int i = minForTrees.x; i < maxForTrees.x; i++)
+		{
+			auto &t = map.unsafeGet(i, j);
+			
+			if (t.type == Tile::treeTop)
+			{
+				auto &s = this->sprites[t.type];
+				int tCoordsX = t.variationX;
+				int tCoordsY = t.variationY;
+
+				renderer.renderRectangle({
+				i - 1.5 - 1 / 16.f,
+				j - 3 + 2.f / 16.f,
+				4 + 2 / 16.f,
+				4}, {}, {},
+				s.t, s.getTextureCoords(tCoordsX, tCoordsY));
+			}
+		}
 
 
 	for (int j = minV.y; j < maxV.y; j++)
 		for (int i = minV.x; i < maxV.x; i++)
 		{
-			auto &t = map.safeGet(i, j);
+			auto &t = map.unsafeGet(i, j);
 
 			if (t.type == Tile::none) { continue; }
 
@@ -50,15 +74,11 @@ void TileRenderer::renderMap(gl2d::Renderer2D &renderer, Map &map)
 
 			if (t.type == Tile::treeTop)
 			{
-				renderer.renderRectangle({
-					i - 1.5 - 1 / 16.f,
-					j - 3 + 2.f / 16.f,
-					4 + 2/16.f, 
-					4}, {}, {},
-					s.t, s.getTextureCoords(tCoordsX, tCoordsY));
+				//do nothing
 			}else
 			if (t.isTree())
 			{
+				
 				if (
 					(t.variationX == 3 &&
 					t.variationY == 0) ||
@@ -72,7 +92,7 @@ void TileRenderer::renderMap(gl2d::Renderer2D &renderer, Map &map)
 				else if (
 					(
 					t.variationX == 4 &&
-					t.variationY == 3) 
+					t.variationY == 3)
 					|| (t.variationX == 1 &&
 					t.variationY == 6)
 					)
@@ -85,7 +105,6 @@ void TileRenderer::renderMap(gl2d::Renderer2D &renderer, Map &map)
 					renderer.renderRectangle({i, j + 2.f / 16.f, 1, 1}, {}, {},
 						s.t, s.getTextureCoords(tCoordsX, tCoordsY));
 				}
-			
 			}
 			else
 			{

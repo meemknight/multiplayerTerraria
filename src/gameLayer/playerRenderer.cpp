@@ -35,18 +35,22 @@ void PlayerRenderer::loadAll()
 
 }
 
-void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSkin &skin)
+void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSkin &skin, bool movingRight)
 {
 
 	float pixelSize = 1.f / 16;
 	glm::vec2 pixelSize2{pixelSize, pixelSize};
+
+	pos.x -= pixelSize * 8;
+	pos.y -= pixelSize * 4;
+
 
 	auto drawPart = [&](int i, int x, int y, glm::vec3 color)
 	{
 		auto &p = loadedBodyParts[i];
 		renderer.renderRectangle({pos, pixelSize2 * glm::vec2(p.atlasSize)},
 			glm::vec4(color, 1.f), {}, {},
-			p.s.t, p.s.getTextureCoords(x, y));
+			p.s.t, p.s.getTextureCoords(x, y, !movingRight));
 	};
 
 	auto drawHair = [&](int i, int x, int y, glm::vec3 color)
@@ -54,7 +58,7 @@ void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSki
 		auto &p = hairSprites[i];
 		renderer.renderRectangle({pos, pixelSize2 * glm::vec2(p.blockSize)},
 			glm::vec4(color, 1.f), {}, {},
-			p.t, p.getTextureCoords(x, y));
+			p.t, p.getTextureCoords(x, y, !movingRight));
 	};
 
 	//head
@@ -74,7 +78,7 @@ void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSki
 	}
 	else
 	{
-		drawPart(torso, 0, 0, skin.skinColor);
+		drawPart(torso, 0, 0, skin.skinColor); 
 		drawPart(rightArm, 2, 0, skin.skinColor);
 	}
 	

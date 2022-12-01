@@ -13,6 +13,7 @@
 #include <tileRenderer.h>
 #include "map.h"
 #include "playerRenderer.h"
+#include <entity.h>
 
 #undef min
 #undef max
@@ -20,8 +21,7 @@
 struct GameData
 {
 	float zoom = 1;
-	glm::vec2 playerPos = {};
-
+	Player player;
 
 }gameData;
 
@@ -48,10 +48,14 @@ bool initGame()
 
 	map.renderMapIntoTexture();
 
-	platform::readEntireFile(RESOURCES_PATH "gameData.data", &gameData, sizeof(GameData));
+	if (!platform::readEntireFile(RESOURCES_PATH "gameData.data", &gameData, sizeof(GameData)))
+	{
+		gameData = GameData();
+	}
 
 	renderer.currentCamera.zoom = gameData.zoom;
 
+	gameData.player.position.size = PLAYER_SIZE;
 
 	return true;
 }
@@ -62,9 +66,9 @@ bool gameLogic(float deltaTime)
 {
 #pragma region init stuff
 	int w = 0; int h = 0;
-	w= platform::getWindowSizeX();
+	w = platform::getWindowSizeX();
 	h = platform::getWindowSizeY();
-	
+
 	glViewport(0, 0, w, h);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClearColor(1, 1, 1, 0);
@@ -73,19 +77,62 @@ bool gameLogic(float deltaTime)
 
 #pragma endregion
 
+#pragma region input
 	
-	renderer.currentCamera.follow(gameData.playerPos, 1, 0.01, 3, w, h);
+	{
+		glm::vec2 direction = {};
+
+		if (platform::isKeyHeld(platform::Button::A))
+		{
+			direction.x -= 1;
+		}
+
+		if (platform::isKeyHeld(platform::Button::D))
+		{
+			direction.x += 1;
+		}
+
+		if (platform::isKeyHeld(platform::Button::W))
+		{
+			direction.y -= 1;
+		}
+
+		if (platform::isKeyHeld(platform::Button::S))
+		{
+			direction.y += 1;
+		}
+
+		if (length(direction) != 0.f)
+		{
+			direction = normalize(direction);
+		}
+
+		gameData.player.position.position += deltaTime * direction * 20.f;
+	}
+#pragma endregion
+
+#pragma region player phisics
+
+	gameData.player.resolveConstrains(map);
+
+	gameData.player.updateMove();
+
+#pragma endregion
+
+	
+	renderer.currentCamera.follow(gameData.player.position.getCenter(), 1, 0.01, 3, w, h);
 
 	tileRenderer.renderMap(renderer, map);
 
-	playerRenderer.render(renderer, gameData.playerPos, PlayerSkin{});
+	playerRenderer.render(renderer, gameData.player.position.position, gameData.player.skin,
+		gameData.player.movingRight);
 
 
 #pragma region imgui
 	ImGui::Begin("camera");
 
 	ImGui::DragFloat("zoom", &renderer.currentCamera.zoom, 1, 1, 500);
-	ImGui::DragFloat2("player pos", &gameData.playerPos[0], 5);
+	ImGui::DragFloat2("player pos", &gameData.player.position.position[0], 5);
 	
 	gameData.zoom = renderer.currentCamera.zoom;
 
