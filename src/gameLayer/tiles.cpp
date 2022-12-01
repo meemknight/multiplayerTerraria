@@ -12,7 +12,8 @@ int Tile::fileId[Tile::TILES_COUNT] =
 	7,
 	8,
 	9,
-	30 //wodden plank
+	30, //wodden plank,
+	-1 //tree top
 };
 
 glm::ivec3 Tile::tilesColor[Tile::TILES_COUNT] =
@@ -27,12 +28,13 @@ glm::ivec3 Tile::tilesColor[Tile::TILES_COUNT] =
 	{231,213,65}, //gold
 	{171,182,183}, //silver
 	{151,107,75}, //woden plank
+	{29, 144, 69}, //tree top
 
 };
 
 bool Tile::isAir()
 {
-	return type == none || type==tree;
+	return type == none || type==tree || type == treeTop;
 }
 
 bool Tile::isNone()
@@ -58,5 +60,5 @@ bool Tile::isGrass()
 
 bool Tile::isTree()
 {
-	return type == tree;
+	return type == tree || type == Tile::treeTop;
 }

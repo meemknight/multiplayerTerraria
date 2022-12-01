@@ -36,109 +36,124 @@ Tile &Map::unsafeGet(int x, int y)
 	return tiles[x + y * mapSize.x];
 }
 
+
+const glm::ivec2 TREE_BODY{0,0};
+const glm::ivec2 TREE_BOTH_BRANCHES{4,6};
+const glm::ivec2 TREE_RIGHT_BRANCHES{0,6};
+const glm::ivec2 TREE_LEFT_BRANCHES{3,6};
+const glm::ivec2 TREE_TOP{5,0};
+const glm::ivec2 TREE_BOTH_ROOTS{4,6};
+const glm::ivec2 TREE_RIGHT_ROOTS{0,6};
+const glm::ivec2 TREE_LEFT_ROOTS{3,6};
+const glm::ivec2 TREE_STOMP{0,9};
+const glm::ivec2 TREE_LEFT_BRANCH{3,0};
+const glm::ivec2 TREE_RIGHT_BRANCH{4,3};
+const glm::ivec2 TREE_RIGHT_ROOT_PIECE{1,6};
+const glm::ivec2 TREE_LEFT_ROOT_PIECE{2,6};
+
 void Map::bakeBlockUnsafe(int x, int y)
 {
 	auto &t = this->unsafeGet(x, y);
 
+	if (t.type == Tile::treeTop)
+	{
+		t.variationX = 0;
+		t.variationY = 0;
+	}else
 	if (t.isTree())
 	{
 		bool leftMiddleAir = (x > 0 && unsafeGet(x - 1, y).isAir());
 		bool rightMiddleAir = (x < mapSize.x - 1 && unsafeGet(x + 1, y).isAir());
 		bool topMiddleAir = (y > 0 && unsafeGet(x, y - 1).isAir());
 		bool bottomMiddleAir = (y < mapSize.y - 1 && unsafeGet(x, y + 1).isAir());
-
+	
 		bool leftMiddleTree = (x > 0 && unsafeGet(x - 1, y).isTree());
 		bool rightMiddleTree = (x < mapSize.x - 1 && unsafeGet(x + 1, y).isTree());
 		bool topMiddleTree = (y > 0 && unsafeGet(x, y - 1).isTree());
 		bool bottomMiddleTree = (y < mapSize.y - 1 && unsafeGet(x, y + 1).isTree());
-
-		//if (!bottomMiddleAir)
+	
+		if (t.subtype == 0)
 		{
-			if (bottomMiddleTree)
+			if (topMiddleTree)
 			{
-				if (leftMiddleTree && rightMiddleTree && topMiddleTree)
+				if (rightMiddleTree && leftMiddleTree)
 				{
-					//both branches uncut
-					t.variationX = 4;
-					t.variationY = 6;
+					t.variationX = TREE_BOTH_ROOTS.x;
+					t.variationY = TREE_BOTH_ROOTS.y;
 				}
-				else if (rightMiddleTree && topMiddleTree)
+				else if (leftMiddleTree)
 				{
-					//both branches
-					t.variationX = 0;
-					t.variationY = 6;
+					t.variationX = TREE_LEFT_ROOTS.x;
+					t.variationY = TREE_LEFT_ROOTS.y;
 				}
-				else if (leftMiddleTree && topMiddleTree)
+				else if (rightMiddleTree)
 				{
-					//roots uncut
-					t.variationX = 3;
-					t.variationY = 6;
-				}
-				else if (topMiddleTree)
-				{
-					//uncut
-					t.variationX = 0;
-					t.variationY = 0;
+					t.variationX = TREE_RIGHT_ROOTS.x;
+					t.variationY = TREE_RIGHT_ROOTS.y;
 				}
 				else
 				{
-					//todo branches
-					//cut
-					t.variationX = 5;
-					t.variationY = 0;
-				}
-			}
-			else if (!bottomMiddleAir)
-			{
-				if (leftMiddleTree && rightMiddleTree && topMiddleTree)
-				{
-					//both roots uncut
-					t.variationX = 4;
-					t.variationY = 6;
-				}
-				else if (rightMiddleTree && topMiddleTree)
-				{
-					//roots uncut
-					t.variationX = 0;
-					t.variationY = 6;
-				}
-				else if (leftMiddleTree && topMiddleTree)
-				{
-					//roots uncut
-					t.variationX = 3;
-					t.variationY = 6;
-				}
-				else if (topMiddleTree)
-				{
-					//uncut
-					t.variationX = 0;
-					t.variationY = 0;
-				}
-				else
-				{
-					//cut
-					t.variationX = 0;
-					t.variationY = 9;
-				}
-			}
-			else 
-			{
-				if (rightMiddleTree)
-				{
-					//branches
-					t.variationX = 3;
-					t.variationY = 0;
-				}
-				else
-				{
-					t.variationX = 4;
-					t.variationY = 3;
+					t.variationX = TREE_BODY.x;
+					t.variationY = TREE_BODY.y;
 				}
 
+			}
+			else
+			{
+				if (rightMiddleTree && leftMiddleTree)
+				{
+					t.variationX = TREE_BOTH_ROOTS.x;
+					t.variationY = TREE_BOTH_ROOTS.y;
+				}
+				else if (leftMiddleTree)
+				{
+					t.variationX = TREE_LEFT_ROOTS.x;
+					t.variationY = TREE_LEFT_ROOTS.y;
+				}
+				else if (rightMiddleTree)
+				{
+					t.variationX = TREE_RIGHT_ROOTS.x;
+					t.variationY = TREE_RIGHT_ROOTS.y;
+				}
+				else
+				{
+					t.variationX = TREE_STOMP.x;
+					t.variationY = TREE_STOMP.y;
+				}
 			}
 
 		}
+		else if (t.subtype == 1)
+		{
+			//banches
+			if (leftMiddleTree)
+			{
+				t.variationX = TREE_RIGHT_BRANCH.x;
+				t.variationY = TREE_RIGHT_BRANCH.y;
+			}
+			else if (rightMiddleTree)
+			{
+				t.variationX = TREE_LEFT_BRANCH.x;
+				t.variationY = TREE_LEFT_BRANCH.y;
+			}
 
+		}
+		else if (t.subtype == 2)
+		{
+			//root
+			if (leftMiddleTree)
+			{
+				t.variationX = TREE_RIGHT_ROOT_PIECE.x;
+				t.variationY = TREE_RIGHT_ROOT_PIECE.y;
+			}
+			else if (rightMiddleTree)
+			{
+				t.variationX = TREE_LEFT_ROOT_PIECE.x;
+				t.variationY = TREE_LEFT_ROOT_PIECE.y;
+			}
+
+		}
+	
 	}else
 	if (!t.isNone())
 	{
@@ -1180,33 +1195,40 @@ void generateMap(Map &m, int seed)
 				{
 					//start spawnTree;
 					m.safeGet(x, y - 1).type = Tile::tree;
+					m.safeGet(x, y - 1).subtype = 0;
 					if (chance(0.2))
 					{
 						auto &b = m.safeGet(x + 1, y - 1);
-						if (b.isAir())
+						auto &ground = m.safeGet(x + 1, y);
+						if (b.isAir(), ground.isDirtOrGrass())
 						{
+							b.subtype = 2; //root
 							b.type = Tile::tree;
 						}
 					}
 
 					if (chance(0.2))
 					{
-						auto &b = m.safeGet(x - 1, y);
-						if (b.isAir())
+						auto &b = m.safeGet(x - 1, y-1);
+						auto &ground = m.safeGet(x - 1, y);
+						if (b.isAir(), ground.isDirtOrGrass())
 						{
+							b.subtype = 2; //root
 							b.type = Tile::tree;
 						}
 					}
 
 
-					int h = randomVal(3, 8);
+					int h = randomVal(3, 9);
 					bool placedBranch = true;
-					for (int t = 2; t < h; t++)
+					int t=0;
+					for (t = 2; t < h; t++)
 					{
 						auto &b = m.safeGet(x, y - t);
 						if (b.isAir())
 						{
 							b.type = Tile::tree;
+							b.subtype = 0;
 						}
 						else
 						{
@@ -1224,6 +1246,7 @@ void generateMap(Map &m, int seed)
 								if (b.isAir())
 								{
 									b.type = Tile::tree;
+									b.subtype = 1; //branch
 									placedBranch = true;
 								}
 							}
@@ -1234,16 +1257,22 @@ void generateMap(Map &m, int seed)
 								if (b.isAir())
 								{
 									b.type = Tile::tree;
+									b.subtype = 1; //branch
 									placedBranch = true;
 								}
 							}
 						}
-
-
 					}
 
+					{
+						auto &b = m.safeGet(x, y - t + 1);
+						if (b.isTree())
+						{
+							b.type = Tile::treeTop;
+						}
+					}
 
-
+					break;
 				}
 				else if (!t.isAir())
 				{

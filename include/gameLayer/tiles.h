@@ -16,6 +16,7 @@ struct Tile
 		gold,
 		silver,
 		woddenPlank,
+		treeTop,
 		TILES_COUNT
 	};
 
@@ -25,6 +26,7 @@ struct Tile
 	short unsigned int type = 0;
 	unsigned char variationX = 0;
 	unsigned char variationY = 0;
+	unsigned char subtype = 0;
 
 	static int fileId[TILES_COUNT];
 	static glm::ivec3 tilesColor[TILES_COUNT];
