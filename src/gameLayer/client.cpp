@@ -1,25 +1,31 @@
-#include <gameplay.h>
+#include <client.h>
 #include <enet/enet.h>
 #include <packet.h>
+#include <unordered_map>
+
+
 #undef max
 #undef min
 
 float zoom = 30;
-Player player;
+//Player player;
 static Map map;
 
 ENetHost *client;
 ENetPeer *server;
 
 int32_t cid;
+std::unordered_map<int32_t, Player> players;
 
-void sendPlayerData(Player &e, bool reliable)
+
+void sendPlayerData(bool reliable)
 {
 	Packet p;
 	p.cid = cid;
 	p.header = headerUpdateConnection;
-	sendPacket(server, p, (const char *)&e, sizeof(Player), reliable, 0);
+	sendPacket(server, p, (const char *)&players[cid], sizeof(Player), reliable, 0);
 }
+
 
 bool joinServer(PlayerSkin playerSkin)
 {
@@ -81,13 +87,10 @@ bool joinServer(PlayerSkin playerSkin)
 		
 		map.create(mapSize.x, mapSize.y);
 
-		Player player; //todo recieved by the server
-		player.skin = playerSkin;
-
-		sendPlayerData(player, true);
-
 		//std::cout << "received cid: " << cid << "\n";
 		enet_packet_destroy(event.packet);
+
+
 	}
 	else
 	{
@@ -119,6 +122,49 @@ bool joinServer(PlayerSkin playerSkin)
 
 		std::memcpy(&map.tiles[0], mapTiles, sizeof(Tile) * map.mapSize.x * map.mapSize.y);
 
+		map.renderMapIntoTexture();
+
+		enet_packet_destroy(event.packet);
+
+	}
+	else
+	{
+		enet_peer_reset(server);
+		enet_host_destroy(client);
+		client = 0;
+		server = 0;
+
+		return false;
+	}
+
+	//then we recieve player position
+	if (enet_host_service(client, &event, 5000) > 0
+		&& event.type == ENET_EVENT_TYPE_RECEIVE)
+	{
+		Packet p = {};
+		size_t size = {};
+		auto data = parsePacket(event, p, size);
+
+		if (p.header == headerUpdateConnection)
+		{
+
+			//players[p.cid] = *(phisics::Entity *)data;
+			players[p.cid] = *(Player *)data;
+			players[p.cid].skin = playerSkin;
+			
+			//send skin
+			sendPlayerData(true);
+
+		}
+		else
+		{
+			enet_peer_reset(server);
+			enet_host_destroy(client);
+			client = 0;
+			server = 0;
+			return false;
+		}
+
 		enet_packet_destroy(event.packet);
 
 	}
@@ -137,7 +183,7 @@ bool joinServer(PlayerSkin playerSkin)
 }
 
 
-void serverUpdate(ENetHost *client)
+void serverConnectionUpdate(ENetHost *client)
 {
 	ENetEvent event;
 	if (enet_host_service(client, &event, 0) > 0)
@@ -146,7 +192,19 @@ void serverUpdate(ENetHost *client)
 		{
 		case ENET_EVENT_TYPE_RECEIVE:
 		{
-		
+
+			Packet p = {};
+			size_t size = {};
+			auto data = parsePacket(event, p, size);
+
+			if (p.header == headerUpdateConnection)
+			{
+
+				players[p.cid] = *(Player *)data;
+				//player = *(Player *)data;
+
+			}
+			
 		
 			enet_packet_destroy(event.packet);
 			break;
@@ -171,10 +229,12 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 	PlayerRenderer &playerRenderer)
 {
 
-	serverUpdate(client);
+	serverConnectionUpdate(client);
 
 	renderer.pushCamera();
 	renderer.currentCamera.zoom = zoom;
+
+	auto &player = players[cid];
 
 #pragma region input
 
@@ -239,18 +299,24 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 
 #pragma region player phisics
 
-	if (!CREATIVE)
+
+	for (auto &i : players)
 	{
-		player.applyGravity(9.f);
+		if (!CREATIVE)
+		{
+			i.second.applyGravity(9.f);
 
-		player.updatePhisics(deltaTime);
+			i.second.updatePhisics(deltaTime);
 
-		player.resolveConstrains(map);
+			i.second.resolveConstrains(map);
+		}
+
+		i.second.updateMove();
+
+		i.second.playerAnimation.update(deltaTime);
 	}
 
-	player.updateMove();
 
-	player.playerAnimation.update(deltaTime);
 
 #pragma endregion
 
@@ -259,11 +325,44 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 
 	tileRenderer.renderMap(renderer, map);
 
+	for (auto &i : players)
+	{
+		if(i.first != cid)
+		playerRenderer.render(renderer, i.second.position.position, i.second.skin,
+			i.second.movingRight, i.second.playerAnimation);
+	}
+
 	playerRenderer.render(renderer, player.position.position, player.skin,
 		player.movingRight, player.playerAnimation);
-	
+
+
+#pragma region send player data
+
+	{
+		static float timer = 0;
+		constexpr float updateTime = 1.f / 10;
+		bool playerChanged = false;
+
+
+		timer -= deltaTime;
+		if (playerChanged || timer <= 0)
+		{
+			timer = updateTime;
+			playerChanged = true;
+		}
+
+		if (playerChanged)
+		{
+			sendPlayerData(false);
+		}
+	}
+
+#pragma endregion
+
+
 
 #pragma region imgui
+	/*
 	ImGui::Begin("camera");
 
 	ImGui::DragFloat("zoom", &zoom, 1, 1, 500);
@@ -288,6 +387,7 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 
 
 	ImGui::End();
+	*/
 #pragma endregion
 
 

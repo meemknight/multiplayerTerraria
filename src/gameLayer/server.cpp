@@ -2,6 +2,7 @@
 #include <thread>
 #include <chrono>
 #include <atomic>
+#include <iostream>
 
 std::atomic_bool serverIsRunning = false;
 std::atomic_bool shouldCloseServer = true;
@@ -65,16 +66,86 @@ void addConnection(ENetHost *server, ENetEvent &event)
 {
 	changedData = true;
 
-	Packet p;
-	p.header = headerReceiveCIDAndData;
-	p.cid = pids;
+	{
+		Packet p;
+		p.header = headerReceiveCIDAndData;
+		p.cid = pids;
+
+		//send own cid and map size
+		sendPacket(event.peer, p, (const char *)&map.mapSize, sizeof(map.mapSize), true, 0);
+	}
+
+
+	connections[pids].playerData = Player{};
+	connections[pids].playerData.position.position.x = map.mapSize.x/2;
+	connections[pids].peer = event.peer;
+
+	//send map
+	sendMapData(event.peer);
+
+	//send player data to this player
+	{
+		Packet p;
+		p.header = headerUpdateConnection;
+		p.cid = pids;
+		sendPacket(event.peer, p, (const char *)&connections[pids].playerData,
+			sizeof(Player), true, 0);
+	
+	}
+
+	//send this player all the other info
+	for (auto &i : connections)
+	{
+		if (i.first != pids)
+		{
+			Packet p;
+			p.header = headerUpdateConnection;
+			p.cid = i.first;
+			sendPacket(event.peer, p, (const char *)&i.second.playerData,
+				sizeof(Player), true, 0);
+		}
+	}
 
 	pids++;
 
-	//send own cid and map size
-	sendPacket(event.peer, p, (const char *)&map.mapSize, sizeof(map.mapSize), true, 0);
 
-	sendMapData(event.peer);
+}
+
+void recieveData(ENetHost *server, ENetEvent &event)
+{
+	changedData = true;
+
+	Packet p;
+	size_t size = 0;
+	auto data = parsePacket(event, p, size);
+
+	//validate data
+	auto it = connections.find(p.cid);
+	if (it != connections.end() && it->second.peer != event.peer)
+	{
+		//std::cout << "invalid data!\n";
+		return;
+	}
+
+	if (p.header == headerUpdateConnection)
+	{
+		it->second.playerData = *(Player*)(data);
+		it->second.changed = true;
+		
+		if (!it->second.ready)
+		{
+			it->second.ready = true;
+				//first time, send to others so they have its skin and position
+			std::cout << "recieved a player";
+
+			broadCast(p, (void*)&it->second.playerData, sizeof(Player), event.peer, true, 0);
+		}
+		
+		
+	}
+
+	enet_packet_destroy(event.packet);
+
 
 }
 
@@ -116,7 +187,7 @@ void serverFunction()
 			}
 			case ENET_EVENT_TYPE_RECEIVE:
 			{
-				//recieveData(server, event);
+				recieveData(server, event);
 
 				break;
 			}
@@ -136,6 +207,26 @@ void serverFunction()
 		//broadcast some changes
 		if (!shouldCloseServer)
 		{
+
+			if (changedData)
+			{
+				for (auto p = connections.begin(); p != connections.end(); p++)
+				{
+
+					if (!p->second.changed)
+					{
+						continue;
+					}
+
+					p->second.changed = false;
+
+					Packet sPacket;
+					sPacket.header = headerUpdateConnection;
+					sPacket.cid = p->first;
+					broadCast(sPacket, &p->second.playerData, sizeof(Player), p->second.peer, false, 0);
+				}
+
+			}
 
 
 

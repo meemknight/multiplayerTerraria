@@ -15,6 +15,8 @@ struct Map
 	void create(int x, int y);
 	void cleanup();
 
+	glm::ivec2 spawnPos = {};
+
 	Tile &safeGet(int x, int y);
 	Tile &unsafeGet(int x, int y);
 

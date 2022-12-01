@@ -10,6 +10,7 @@ struct Client
 	ENetPeer *peer = {}; //connection to the player
 	Player playerData = {};
 	bool changed = 1; //used by the server
+	bool ready = false;
 };
 
 

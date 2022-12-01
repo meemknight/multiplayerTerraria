@@ -14,7 +14,7 @@
 #include "map.h"
 #include "playerRenderer.h"
 #include <entity.h>
-#include <gameplay.h>
+#include <client.h>
 #include <glui/glui.h>
 #include <enet/enet.h>
 #include <server.h>
@@ -94,10 +94,23 @@ bool gameLogic(float deltaTime)
 		{
 			glui::Texture(1, logoTexture);
 
-			if(glui::Button("Start game", Colors_White))
+			if(glui::Button("Start server", Colors_White))
 			{
 				
 				launchServer();
+
+				if (joinServer(gameData.playerSkin))
+				{
+					gameplayRunning = true;
+				}
+				else
+				{
+					std::cout << "Error joining server\n";
+				}
+			}
+
+			if (glui::Button("Join game", Colors_White))
+			{
 
 				if (joinServer(gameData.playerSkin))
 				{
