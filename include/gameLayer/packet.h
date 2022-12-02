@@ -21,7 +21,16 @@ enum
 	headerReceiveCIDAndData,
 	headerReceiveMapData,
 	headerUpdateConnection, //update player position and other stuff
+	headerUpdateNPC, 
+	headerPlaceBlock
 	
+};
+
+struct PlaceBlockPacket
+{
+	int posx = 0;
+	int posy = 0;
+	short unsigned type = 0;
 };
 
 constexpr int SERVER_CHANNELS = 1;

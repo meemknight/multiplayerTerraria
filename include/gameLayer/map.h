@@ -20,6 +20,8 @@ struct Map
 	Tile &safeGet(int x, int y);
 	Tile &unsafeGet(int x, int y);
 
+	void unsafePlace(int x, int y, unsigned short type);
+
 	void bakeBlockUnsafe(int x, int y);
 	void bakeBlockAndNeighboursUnsafe(int x, int y);
 	void bakeBlockSafe(int x, int y);

@@ -1,5 +1,6 @@
 #include <playerRenderer.h>
 #include <string>
+#include <iostream>
 
 BodyPart loadedBodyParts[PlayerRenderer::bodyParts::BODY_PARTS_COUNT] = {
 	{0, {38, 54}},
@@ -77,18 +78,43 @@ void PlayerRenderer::render(gl2d::Renderer2D &renderer, glm::vec2 pos, PlayerSki
 		pos.y -= pixelSize * 2 * size;
 	}
 
-	drawPart(rightArm, animation.handFrameX, 2, skin.skinColor); //left arm
+	if (animation.grounded)
+	{
+		drawPart(rightArm, animation.handFrameX, 2, skin.skinColor); //left arm
+	}
+	else
+	{
+		drawPart(rightArm, 2, 3, skin.skinColor); //left arm
+	}
+
 	
 	if (skin.hasClothes)
 	{
 		drawPart(clothes, 0, 0, skin.clothesColor);
-		drawPart(rightArm, animation.handFrameX, animation.handFrameY, skin.skinColor);
-		drawPart(clothes, 0, 3, skin.clothesColor); // shoulder pad
+		
+		if (animation.grounded)
+		{
+			drawPart(rightArm, animation.handFrameX, animation.handFrameY, skin.skinColor);
+			drawPart(clothes, 0, 3, skin.clothesColor); // shoulder pad
+		}
+		else
+		{
+			drawPart(rightArm, 2, 1, skin.skinColor);
+		}
+
 	}
 	else
 	{
 		drawPart(torso, 0, 0, skin.skinColor); 
-		drawPart(rightArm, animation.handFrameX, animation.handFrameY, skin.skinColor);
+
+		if (animation.grounded)
+		{
+			drawPart(rightArm, animation.handFrameX, animation.handFrameY, skin.skinColor);
+		}
+		else
+		{
+			drawPart(rightArm, 2, 1, skin.skinColor);
+		}
 	}
 
 	if (animation.isFrameUp)
@@ -113,7 +139,9 @@ void PlayerAnimation::update(float deltaTime)
 {
 	if (state == stay)
 	{
+		bool grounded_ = grounded;
 		*this = PlayerAnimation{};
+		grounded = grounded_;
 	}
 	else if (state == running)
 	{

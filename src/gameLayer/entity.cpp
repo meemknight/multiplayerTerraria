@@ -134,7 +134,6 @@ void Player::updateMove()
 	lastPos = position.position;
 
 	movingThisFrame = false;
-	grounded = false;
 
 }
 
@@ -332,7 +331,7 @@ end:
 	//clamp the box if needed
 	if (pos.x < 0) { pos.x = 0; leftTouch = true; }
 	if (pos.x + position.size.x > (mapData.mapSize.x) * BLOCK_SIZE) 
-	{pos.x = ((mapData.mapSize.y) * BLOCK_SIZE) - position.size.x; rightTouch = true;}
+	{pos.x = ((mapData.mapSize.x) * BLOCK_SIZE) - position.size.x; rightTouch = true;}
 	
 
 	if (leftTouch && velocity.x < 0) { velocity.x = 0; }
@@ -342,6 +341,5 @@ end:
 	if (downTouch && velocity.y > 0) { velocity.y = 0; }
 
 	if (downTouch) { grounded = true; }
-	else { grounded = false; }
 
 }

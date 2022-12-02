@@ -3,11 +3,14 @@
 #include <chrono>
 #include <atomic>
 #include <iostream>
+#include <npcs.h>
 
 std::atomic_bool serverIsRunning = false;
 std::atomic_bool shouldCloseServer = true;
 
 static Map map;
+
+static Npc guide = {};
 
 std::unordered_map<int32_t, Client> connections;
 
@@ -36,6 +39,9 @@ void launchServer()
 
 	generateMap(map, 1234);
 
+	guide.p.position.position.x = map.mapSize.x/2;
+
+
 	std::thread t(serverFunction);
 	t.detach();
 
@@ -51,6 +57,22 @@ void closeServer()
 int pids = 1;
 bool changedData = 0;
 
+void sendNpcData(ENetPeer *to, bool reliable)
+{
+	Packet p;
+	p.header = headerUpdateNPC;
+	p.cid = 0; //server
+	sendPacket(to, p, (const char *)&guide, sizeof(guide), reliable, 0);
+}
+
+void broadCastNpcData(bool reliable)
+{
+	for (auto it = connections.begin(); it != connections.end(); it++)
+	{
+		sendNpcData(it->second.peer, reliable);
+	}
+}
+
 void sendMapData(ENetPeer *to)
 {
 	Packet p;
@@ -58,8 +80,6 @@ void sendMapData(ENetPeer *to)
 	p.cid = 0; //server
 
 	sendPacket(to, p, (const char *)&map.tiles[0], sizeof(map.tiles[0]) * map.tiles.size(), true, 0);
-
-
 }
 
 void addConnection(ENetHost *server, ENetEvent &event)
@@ -106,8 +126,11 @@ void addConnection(ENetHost *server, ENetEvent &event)
 		}
 	}
 
-	pids++;
 
+	//send npc data;
+	sendNpcData(event.peer, true);
+
+	pids++;
 
 }
 
@@ -142,6 +165,13 @@ void recieveData(ENetHost *server, ENetEvent &event)
 		}
 		
 		
+	}
+	else if (p.header == headerPlaceBlock)
+	{
+		PlaceBlockPacket placeBlockPacket = *(PlaceBlockPacket *)data;
+		map.unsafePlace(placeBlockPacket.posx, placeBlockPacket.posy, placeBlockPacket.type);
+
+		broadCast(p, (void *)data, sizeof(PlaceBlockPacket), event.peer, true, 0); //todo channel 2
 	}
 
 	enet_packet_destroy(event.packet);
@@ -226,6 +256,7 @@ void serverFunction()
 					broadCast(sPacket, &p->second.playerData, sizeof(Player), p->second.peer, false, 0);
 				}
 
+				changedData = false;
 			}
 
 
@@ -236,8 +267,6 @@ void serverFunction()
 		if (!shouldCloseServer)
 		{
 
-
-
 			float deltaTime = 0.f;
 			{
 				static auto stop = std::chrono::high_resolution_clock::now();
@@ -246,6 +275,39 @@ void serverFunction()
 				deltaTime = (std::chrono::duration_cast<std::chrono::microseconds>(start - stop)).count() / 1000000.0f;
 				stop = std::chrono::high_resolution_clock::now();
 			}
+
+
+			//npc
+			{
+				guide.p.applyGravity(8.f);
+				guide.p.updatePhisics(deltaTime);
+				guide.p.grounded = false;
+				guide.p.resolveConstrains(map);
+				guide.p.updateMove();
+			}
+
+			bool npcChanged = 0;
+			//send npc data
+			{
+				static float timer = 0;
+				constexpr float updateTime = 1.f / 10;
+
+
+				timer -= deltaTime;
+				if (npcChanged || timer <= 0)
+				{
+					timer = updateTime;
+					npcChanged = true;
+				}
+
+				if (npcChanged)
+				{
+					broadCastNpcData(false);
+				}
+			}
+
+
+
 		}
 
 	}

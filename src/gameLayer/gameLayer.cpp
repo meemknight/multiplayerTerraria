@@ -18,6 +18,8 @@
 #include <glui/glui.h>
 #include <enet/enet.h>
 #include <server.h>
+#include <items.h>
+#include <npcs.h>
 
 #undef min
 #undef max
@@ -34,8 +36,13 @@ TileRenderer tileRenderer;
 
 PlayerRenderer playerRenderer;
 
+ItemRenderer itemRenderer;
+
+NpcRenderer npcRenderer;
+
 gl2d::Texture logoTexture;
 gl2d::Texture splashScreenTexture;
+gl2d::Texture uiTexture;
 
 gl2d::Font font;
 
@@ -52,12 +59,13 @@ bool initGame()
 	renderer.currentCamera.zoom = 100;
 
 	tileRenderer.loadAll();
-
 	playerRenderer.loadAll();
+	itemRenderer.loadAll();
+	npcRenderer.load();
 
 	logoTexture.loadFromFile(RESOURCES_PATH "Logo.png");
-
 	splashScreenTexture.loadFromFile(RESOURCES_PATH "splash.png");
+	uiTexture.loadFromFile(RESOURCES_PATH "InnerPanelBackground.png", true);
 
 	font.createFromFile(RESOURCES_PATH "roboto_black.ttf");
 
@@ -94,7 +102,7 @@ bool gameLogic(float deltaTime)
 		{
 			glui::Texture(1, logoTexture);
 
-			if(glui::Button("Start server", Colors_White))
+			if(glui::Button("Start server", Colors_White, uiTexture))
 			{
 				
 				launchServer();
@@ -109,7 +117,7 @@ bool gameLogic(float deltaTime)
 				}
 			}
 
-			if (glui::Button("Join game", Colors_White))
+			if (glui::Button("Join game", Colors_White, uiTexture))
 			{
 
 				if (joinServer(gameData.playerSkin))
@@ -122,14 +130,14 @@ bool gameLogic(float deltaTime)
 				}
 			}
 
-			glui::BeginMenu("Costumize character", Colors_White, {});
+			glui::BeginMenu("Costumize character", Colors_White, uiTexture);
 			{
-				glui::colorPicker("Hair Color", &gameData.playerSkin.hairColor[0]);
-				glui::sliderInt("Hair Type", &gameData.playerSkin.hairType, 0, 19);
-				glui::colorPicker("Eye color", &gameData.playerSkin.eyeColor[0]);
-				glui::colorPicker("Skin color", &gameData.playerSkin.skinColor[0]);
-				glui::colorPicker("Clothes color", &gameData.playerSkin.clothesColor[0]);
-				glui::colorPicker("Pants color", &gameData.playerSkin.pantsColor[0]);
+				glui::colorPicker("Hair Color", &gameData.playerSkin.hairColor[0], uiTexture, uiTexture);
+				glui::sliderInt("Hair Type", &gameData.playerSkin.hairType, 0, 19, uiTexture, {1,1,1,1}, uiTexture);
+				glui::colorPicker("Eye color", &gameData.playerSkin.eyeColor[0], uiTexture, uiTexture);
+				glui::colorPicker("Skin color", &gameData.playerSkin.skinColor[0], uiTexture, uiTexture);
+				glui::colorPicker("Clothes color", &gameData.playerSkin.clothesColor[0], uiTexture, uiTexture);
+				glui::colorPicker("Pants color", &gameData.playerSkin.pantsColor[0], uiTexture, uiTexture);
 				
 				glui::newColum(1);
 
@@ -158,8 +166,8 @@ bool gameLogic(float deltaTime)
 					renderer.popCamera();
 				}
 
-				glui::Toggle("Has clothes", Colors_White, &gameData.playerSkin.hasClothes);
-				glui::Toggle("Has pants", Colors_White, &gameData.playerSkin.hasPants);
+				glui::Toggle("Has clothes", Colors_White, &gameData.playerSkin.hasClothes, uiTexture, uiTexture);
+				glui::Toggle("Has pants", Colors_White, &gameData.playerSkin.hasPants, uiTexture, uiTexture);
 				
 
 			}
@@ -174,7 +182,7 @@ bool gameLogic(float deltaTime)
 	}
 	else
 	{
-		runGameplay(deltaTime, renderer, tileRenderer, playerRenderer);
+		runGameplay(deltaTime, renderer, tileRenderer, playerRenderer, itemRenderer, npcRenderer);
 	}
 
 

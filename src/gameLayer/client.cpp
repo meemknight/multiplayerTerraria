@@ -2,7 +2,7 @@
 #include <enet/enet.h>
 #include <packet.h>
 #include <unordered_map>
-
+#include <Ui.h>
 
 #undef max
 #undef min
@@ -16,6 +16,10 @@ ENetPeer *server;
 
 int32_t cid;
 std::unordered_map<int32_t, Player> players;
+
+static Npc guide = {};
+
+extern gl2d::Texture uiTexture;
 
 
 void sendPlayerData(bool reliable)
@@ -204,6 +208,16 @@ void serverConnectionUpdate(ENetHost *client)
 				//player = *(Player *)data;
 
 			}
+			else if (p.header == headerPlaceBlock)
+			{
+				PlaceBlockPacket placeBlockPacket = *(PlaceBlockPacket *)data;
+				map.unsafePlace(placeBlockPacket.posx, placeBlockPacket.posy, placeBlockPacket.type);
+			}
+			else if (p.header == headerUpdateNPC)
+			{
+				Npc npc = *(Npc*)data;
+				guide = npc;
+			}
 			
 		
 			enet_packet_destroy(event.packet);
@@ -225,8 +239,21 @@ void serverConnectionUpdate(ENetHost *client)
 }
 
 
+void placeBlockServer(int x, int y, unsigned short type)
+{
+	PlaceBlockPacket placeBlockPacket;
+	placeBlockPacket.posx = x;
+	placeBlockPacket.posy = y;
+	placeBlockPacket.type = type;
+
+	Packet p;
+	p.cid = cid;
+	p.header = headerPlaceBlock;
+	sendPacket(server, p, (const char *)&placeBlockPacket, sizeof(placeBlockPacket), 1, 0); //todo channel 2
+}
+
 void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tileRenderer,
-	PlayerRenderer &playerRenderer)
+	PlayerRenderer &playerRenderer, ItemRenderer &itemRenderer, NpcRenderer &npcRenderer)
 {
 
 	serverConnectionUpdate(client);
@@ -235,9 +262,11 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 	renderer.currentCamera.zoom = zoom;
 
 	auto &player = players[cid];
+	bool playerChanged = false;
 
 #pragma region input
 
+	//creative is deprecated!!!!!!!!!!!!
 	const bool CREATIVE = 0;
 
 	if (CREATIVE)
@@ -273,23 +302,29 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 	}
 	else
 	{
-		float direction = {};
+		int input = 0;
 
 		if (platform::isKeyHeld(platform::Button::A))
 		{
-			direction -= 1;
+			input -= 1;
 		}
 
 		if (platform::isKeyHeld(platform::Button::D))
 		{
-			direction += 1;
+			input += 1;
 		}
 
-		player.moveVelocityX(10 * deltaTime * direction);
+		if (player.input != input)
+		{
+			player.input = input;
+			playerChanged = true;
+		}
 
-		if (platform::isKeyPressedOn(platform::Button::Space))
+
+		if (platform::isKeyPressedOn(platform::Button::Space) && player.grounded)
 		{
 			player.jump();
+			playerChanged = true;
 		}
 	}
 
@@ -302,18 +337,31 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 
 	for (auto &i : players)
 	{
+		i.second.moveVelocityX(10 * deltaTime * i.second.input);
+
 		if (!CREATIVE)
 		{
-			i.second.applyGravity(9.f);
+			i.second.applyGravity(8.f);
 
 			i.second.updatePhisics(deltaTime);
 
+			i.second.grounded = false;
 			i.second.resolveConstrains(map);
 		}
+
+		i.second.playerAnimation.grounded = i.second.grounded;
 
 		i.second.updateMove();
 
 		i.second.playerAnimation.update(deltaTime);
+	}
+
+	{
+		guide.p.applyGravity(8.f);
+		guide.p.updatePhisics(deltaTime);
+		guide.p.grounded = false;
+		guide.p.resolveConstrains(map);
+		guide.p.updateMove();
 	}
 
 
@@ -322,8 +370,24 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 
 
 	renderer.currentCamera.follow(player.position.getCenter(), 3, 0.0001, 0.2, platform::getWindowSizeX(), platform::getWindowSizeY());
+	
+	auto view = renderer.getViewRect();
+	if (view.x < 0)
+	{
+		renderer.currentCamera.position.x -= view.x;
+	}
+	else if (view.x + view.z > map.mapSize.x)
+	{
+		renderer.currentCamera.position.x -= (view.x + view.z) - map.mapSize.x;
+	}
 
 	tileRenderer.renderMap(renderer, map);
+
+	renderer.renderRectangle(gl2d::Rect{guide.p.position.position, glm::ivec2{38 / 16.f, 54 / 16.f}}, glm::vec2{}, 0.f, npcRenderer.texture.t,
+		npcRenderer.texture.getTextureCoords(0, 0, 0));
+
+	//playerRenderer.render(renderer, guide.p.position.position, player.skin,
+	//	player.movingRight, player.playerAnimation);
 
 	for (auto &i : players)
 	{
@@ -335,13 +399,143 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 	playerRenderer.render(renderer, player.position.position, player.skin,
 		player.movingRight, player.playerAnimation);
 
+#pragma region inventory
+
+	Item inventory[5] = {1,2,3,4,0};
+	static int currentItem = 0;
+
+	if (platform::isKeyReleased(platform::Button::NR1))
+	{
+		currentItem = 0;
+	}else
+	if (platform::isKeyReleased(platform::Button::NR2))
+	{
+		currentItem = 1;
+	}else
+	if (platform::isKeyReleased(platform::Button::NR3))
+	{
+		currentItem = 2;
+	}
+	else
+	if (platform::isKeyReleased(platform::Button::NR4))
+	{
+		currentItem = 3;
+	}
+	else
+	if (platform::isKeyReleased(platform::Button::NR5))
+	{
+		currentItem = 4;
+	};
+
+
+#pragma endregion
+
+
+
+#pragma region place blocks
+
+	if (platform::isFocused())
+	{
+		glm::ivec2 mousePos = platform::getRelMousePosition();
+
+		auto lerp = [](auto a, auto b, auto c)
+		{
+			return a *(1.f - c) + b * c;
+		};
+
+		glm::ivec2 blockPosition = lerp(glm::vec2(view.x, view.y),
+			glm::vec2(view.x + view.z, view.y + view.w), glm::vec2(mousePos) / glm::vec2(platform::getWindowSize()));
+
+		renderer.renderRectangle({blockPosition, 1, 1}, {0,0,1,0.4});
+
+
+		if (platform::isLMousePressed() && blockPosition.x > 0 && blockPosition.y > 0
+			&& blockPosition.x < map.mapSize.x - 1  && blockPosition.y < map.mapSize.y - 1)
+		{
+			auto item = inventory[currentItem];
+			
+			if (item.type == Item::pickaxe)
+			{
+				map.unsafePlace(blockPosition.x, blockPosition.y, 0);
+				placeBlockServer(blockPosition.x, blockPosition.y, 0);
+			}
+			else if (item.type == Item::dirt)
+			{
+				map.unsafePlace(blockPosition.x, blockPosition.y, Tile::dirt);
+				placeBlockServer(blockPosition.x, blockPosition.y, Tile::dirt);
+			}
+			else if (item.type == Item::stone)
+			{
+				map.unsafePlace(blockPosition.x, blockPosition.y, Tile::stone);
+				placeBlockServer(blockPosition.x, blockPosition.y, Tile::stone);
+			}
+			else if (item.type == Item::woddenPlank)
+			{
+				map.unsafePlace(blockPosition.x, blockPosition.y, Tile::woddenPlank);
+				placeBlockServer(blockPosition.x, blockPosition.y, Tile::woddenPlank);
+			}
+
+		}
+
+
+	}
+
+
+
+#pragma endregion
+
+
+#pragma region UI
+	{
+
+		Ui::Frame frame({0, 0, platform::getWindowSize()});
+		float padding = 10;
+
+		auto inventoryBox = Ui::Box().xLeft(padding).xDimensionPercentage(0.1).yAspectRatio(1.f)();
+
+		inventoryBox.z = std::min(inventoryBox.z, 70);
+		inventoryBox.w = inventoryBox.z;
+
+		renderer.pushCamera();
+
+		for (int i = 0; i < 5; i++)
+		{
+			if (i == currentItem)
+			{
+				renderer.renderRectangle(inventoryBox, Colors_Black, {}, {}, uiTexture);
+			}
+			else
+			{
+				renderer.renderRectangle(inventoryBox, {}, {}, uiTexture);
+			}
+			
+			if (inventory[i].type != 0)
+			{
+				glm::vec4 smaller = inventoryBox;
+				smaller.z *= 0.7;
+				smaller.w *= 0.7;
+
+				smaller.x += (inventoryBox.z - smaller.z) / 2.f;
+				smaller.y += (inventoryBox.w - smaller.w) / 2.f;
+
+				renderer.renderRectangle(smaller, {}, {}, itemRenderer.textures[inventory[i].type]);
+			}
+			
+			inventoryBox.x += padding + inventoryBox.z;
+		}
+
+
+		renderer.popCamera();
+	}
+#pragma endregion
+
+
 
 #pragma region send player data
 
 	{
 		static float timer = 0;
 		constexpr float updateTime = 1.f / 10;
-		bool playerChanged = false;
 
 
 		timer -= deltaTime;
@@ -358,6 +552,9 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 	}
 
 #pragma endregion
+
+
+
 
 
 

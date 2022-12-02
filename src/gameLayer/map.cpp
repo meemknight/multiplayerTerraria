@@ -36,6 +36,13 @@ Tile &Map::unsafeGet(int x, int y)
 	return tiles[x + y * mapSize.x];
 }
 
+void Map::unsafePlace(int x, int y, unsigned short type)
+{
+	unsafeGet(x, y) = Tile(type);
+	bakeBlockAndNeighboursUnsafe(x, y);
+
+}
+
 
 const glm::ivec2 TREE_BODY{0,0};
 const glm::ivec2 TREE_BOTH_BRANCHES{4,6};
@@ -530,23 +537,23 @@ void Map::bakeBlockUnsafe(int x, int y)
 					t.variationX = 2;
 					t.variationY = 1;
 				}else
-				//if (leftMiddleGrass && topMiddleGrass && rightMiddleGrass)
-				//{
-				//	t.variationX = 6;
-				//	t.variationY = 1;
-				//}else if (leftMiddleGrass && bottomMiddleGrass && rightMiddleGrass)
-				//{
-				//	t.variationX = 6;
-				//	t.variationY = 2;
-				//}else if (topMiddleGrass && bottomMiddleGrass && rightMiddleGrass)
-				//{
-				//	t.variationX = 11;
-				//	t.variationY = 0;
-				//}else if (topMiddleGrass && bottomMiddleGrass && leftMiddleGrass)
-				//{
-				//	t.variationX = 10;
-				//	t.variationY = 0;
-				//}else
+				if (leftMiddleGrass && topMiddleGrass && rightMiddleGrass)
+				{
+					t.variationX = 6;
+					t.variationY = 1;
+				}else if (leftMiddleGrass && bottomMiddleGrass && rightMiddleGrass)
+				{
+					t.variationX = 6;
+					t.variationY = 2;
+				}else if (topMiddleGrass && bottomMiddleGrass && rightMiddleGrass)
+				{
+					t.variationX = 11;
+					t.variationY = 0;
+				}else if (topMiddleGrass && bottomMiddleGrass && leftMiddleGrass)
+				{
+					t.variationX = 10;
+					t.variationY = 0;
+				}else
 				if (leftMiddleGrass && topMiddleGrass)
 				{
 					t.variationX = 3;
@@ -585,11 +592,13 @@ void Map::bakeBlockUnsafe(int x, int y)
 				else if (topMiddleGrass)
 				{
 					t.variationX = 11;
-					t.variationY = 18;
+					t.variationY = 16;
 				}
 				else
 				{
-					goto noGrassCouldBePlaced;
+					t.variationX = 1;
+					t.variationY = 1;
+					//goto noGrassCouldBePlaced;
 				}
 
 

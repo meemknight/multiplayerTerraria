@@ -18,6 +18,7 @@ struct PlayerAnimation
 	int handFrameY = 0;
 	bool isFrameUp = 0;
 	int shoulderPadFrame = 0;
+	bool grounded = 1;
 
 	void update(float deltaTime);
 

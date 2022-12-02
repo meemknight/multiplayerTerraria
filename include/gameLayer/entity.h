@@ -62,5 +62,5 @@ struct Player
 
 	PlayerSkin skin = {};
 
-
+	int input = 0;
 };

@@ -11,11 +11,13 @@
 #include "imgui.h"
 #include <entity.h>
 #include <platformInput.h>
+#include <items.h>
+#include <npcs.h>
 
 
 //void initGameplay(PlayerSkin playerSkin);
 
 void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tileRenderer,
-	PlayerRenderer &playerRenderer);
+	PlayerRenderer &playerRenderer, ItemRenderer &itemRenderer, NpcRenderer &npcRenderer);
 
 bool joinServer(PlayerSkin playerSkin);
