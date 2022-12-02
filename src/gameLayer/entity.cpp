@@ -89,7 +89,7 @@ void Player::moveVelocityX(float dir)
 
 void Player::jump()
 {
-	velocity.y = -120;
+	velocity.y = -100;
 }
 
 const float terminalVelocity = 60;

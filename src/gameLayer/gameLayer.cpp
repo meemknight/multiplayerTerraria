@@ -107,7 +107,7 @@ bool gameLogic(float deltaTime)
 				
 				launchServer();
 
-				if (joinServer(gameData.playerSkin))
+				if (joinServer(gameData.playerSkin, ""))
 				{
 					gameplayRunning = true;
 				}
@@ -117,18 +117,28 @@ bool gameLogic(float deltaTime)
 				}
 			}
 
-			if (glui::Button("Join game", Colors_White, uiTexture))
+			glui::BeginMenu("Join game", Colors_White, uiTexture);
 			{
+				static char ip[17] = {};
 
-				if (joinServer(gameData.playerSkin))
+				glui::Text("enter ip: ", Colors_White);
+				glui::Text("Leave blank for localhost", Colors_White);
+				glui::InputText("input ip", ip, sizeof(ip));
+
+				if (glui::Button("Join", Colors_White, uiTexture))
 				{
-					gameplayRunning = true;
+					if (joinServer(gameData.playerSkin, ip))
+					{
+						gameplayRunning = true;
+					}
+					else
+					{
+						std::cout << "Error joining server\n";
+					}
 				}
-				else
-				{
-					std::cout << "Error joining server\n";
-				}
+			
 			}
+			glui::EndMenu();
 
 			glui::BeginMenu("Costumize character", Colors_White, uiTexture);
 			{

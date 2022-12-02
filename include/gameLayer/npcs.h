@@ -7,7 +7,8 @@ struct Npc
 	//todo somethig else
 	Player p;
 
-
+	float animationTimer = 0;
+	int frame = 0;
 
 
 };

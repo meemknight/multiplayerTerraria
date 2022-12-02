@@ -31,7 +31,7 @@ void sendPlayerData(bool reliable)
 }
 
 
-bool joinServer(PlayerSkin playerSkin)
+bool joinServer(PlayerSkin playerSkin, const char *ip)
 {
 	assert(!client);
 		
@@ -39,8 +39,17 @@ bool joinServer(PlayerSkin playerSkin)
 
 	ENetAddress adress;
 	ENetEvent event;
-	enet_address_set_host(&adress, "127.0.0.1");
-	adress.port = 7779;
+
+	if (ip[0] == 0)
+	{
+		enet_address_set_host(&adress, "127.0.0.1");
+	}
+	else
+	{
+		enet_address_set_host(&adress, ip);
+	}
+
+	adress.port = 77799;
 
 
 	server = enet_host_connect(client, &adress, SERVER_CHANNELS, 0);
@@ -216,7 +225,13 @@ void serverConnectionUpdate(ENetHost *client)
 			else if (p.header == headerUpdateNPC)
 			{
 				Npc npc = *(Npc*)data;
+				
+				float timer = guide.animationTimer;
+				int frame = guide.frame;
 				guide = npc;
+				guide.animationTimer = timer;
+				guide.frame = frame;
+	
 			}
 			
 		
@@ -357,11 +372,42 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 	}
 
 	{
+		guide.p.moveVelocityX(2 * deltaTime * guide.p.input);
 		guide.p.applyGravity(8.f);
 		guide.p.updatePhisics(deltaTime);
 		guide.p.grounded = false;
 		guide.p.resolveConstrains(map);
 		guide.p.updateMove();
+
+		if (guide.p.input > 0)
+		{
+			guide.p.movingRight = true;
+		}
+		else if (guide.p.input < 0)
+		{
+			guide.p.movingRight = false;
+		}
+
+		if (guide.p.playerAnimation.state == PlayerAnimation::running)
+		{
+			guide.animationTimer -= deltaTime;
+			if (guide.animationTimer < 0.f)
+			{
+				guide.animationTimer = 0.12;
+
+				if (guide.frame > 0)guide.frame--;
+
+				guide.frame++;
+				guide.frame %= 15;
+				guide.frame++;
+
+			}
+		}
+		else
+		{
+			guide.frame = 0;
+			guide.animationTimer = 0.2;
+		}
 	}
 
 
@@ -384,7 +430,7 @@ void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tile
 	tileRenderer.renderMap(renderer, map);
 
 	renderer.renderRectangle(gl2d::Rect{guide.p.position.position, glm::ivec2{38 / 16.f, 54 / 16.f}}, glm::vec2{}, 0.f, npcRenderer.texture.t,
-		npcRenderer.texture.getTextureCoords(0, 0, 0));
+		npcRenderer.texture.getTextureCoords(0, guide.frame, guide.p.movingRight));
 
 	//playerRenderer.render(renderer, guide.p.position.position, player.skin,
 	//	player.movingRight, player.playerAnimation);

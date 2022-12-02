@@ -185,7 +185,7 @@ void serverFunction()
 
 	ENetAddress adress;
 	adress.host = ENET_HOST_ANY;
-	adress.port = 7779;
+	adress.port = 77799;
 	ENetEvent event = {};
 
 	//first param adress, players limit, channels, bandwith limit
@@ -278,7 +278,33 @@ void serverFunction()
 
 
 			//npc
+			bool npcChanged = false;
+
 			{
+				static std::mt19937 rng{std::random_device()()};
+
+				static float changeTimer = 1;
+
+				static int dir = 0;
+
+				changeTimer -= deltaTime;
+
+				if (changeTimer < 0.f)
+				{
+					std::uniform_real_distribution<float> dist(1, 5);
+					changeTimer = dist(rng);
+
+					std::uniform_int_distribution<int> distDir(-1, 1);
+					dir = distDir(rng);
+				}
+
+				if (guide.p.input != dir)
+				{
+					guide.p.input = dir;
+					npcChanged = true;
+				}
+
+				guide.p.moveVelocityX(2 * deltaTime * guide.p.input);
 				guide.p.applyGravity(8.f);
 				guide.p.updatePhisics(deltaTime);
 				guide.p.grounded = false;
@@ -286,7 +312,6 @@ void serverFunction()
 				guide.p.updateMove();
 			}
 
-			bool npcChanged = 0;
 			//send npc data
 			{
 				static float timer = 0;

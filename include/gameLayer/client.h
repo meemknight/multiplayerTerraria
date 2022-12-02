@@ -20,4 +20,4 @@
 void runGameplay(float deltaTime, gl2d::Renderer2D &renderer, TileRenderer &tileRenderer,
 	PlayerRenderer &playerRenderer, ItemRenderer &itemRenderer, NpcRenderer &npcRenderer);
 
-bool joinServer(PlayerSkin playerSkin);
+bool joinServer(PlayerSkin playerSkin, const char *ip);
