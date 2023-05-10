@@ -272,8 +272,10 @@ void serverFunction()
 				static auto stop = std::chrono::high_resolution_clock::now();
 				auto start = std::chrono::high_resolution_clock::now();
 
-				deltaTime = (std::chrono::duration_cast<std::chrono::microseconds>(start - stop)).count() / 1000000.0f;
+				deltaTime = (std::chrono::duration_cast<std::chrono::microseconds>(start - stop)).count() / 1'000'000.0f;
 				stop = std::chrono::high_resolution_clock::now();
+
+				//std::cout << deltaTime << "\n";
 			}
 
 
@@ -310,13 +312,14 @@ void serverFunction()
 				guide.p.grounded = false;
 				guide.p.resolveConstrains(map);
 				guide.p.updateMove();
+
+
 			}
 
 			//send npc data
 			{
 				static float timer = 0;
-				constexpr float updateTime = 1.f / 10;
-
+				constexpr float updateTime = 1.f;
 
 				timer -= deltaTime;
 				if (npcChanged || timer <= 0)
